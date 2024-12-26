@@ -8,7 +8,7 @@ use log::info;
 use tempfile::TempDir;
 use utils::{init_utils_files, UTILS_FILES};
 
-use crate::Cmd;
+use crate::rce::Cmd;
 
 pub fn test_bin(bin_path: String) -> Result<(), String> {
     let tmp_dir = TempDir::new().map_err(|_| "Error creating temp dir")?;

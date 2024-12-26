@@ -3,8 +3,9 @@ use log::error;
 use tamanoir_c2::{
     cli::{Command, Opt, RceCommand},
     dns_proxy::DnsProxy,
+    grpc::serve_tonic,
     rce::{builder::build, tester::test_bin},
-    serve_tonic, SessionsStore, TargetArch,
+    SessionsStore, TargetArch,
 };
 
 #[tokio::main]

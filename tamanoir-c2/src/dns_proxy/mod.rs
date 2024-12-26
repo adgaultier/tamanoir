@@ -194,7 +194,7 @@ impl DnsProxy {
             let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
                 sessions.lock().await;
             let current_session = current_sessions.get_mut(&s.ip).unwrap();
-            if let Some(mut rce_payload_buf) = current_session.rce_payload_buffer.clone() {
+            if let Some(ref mut rce_payload_buf) = &mut current_session.rce_payload_buffer {
                 let rce_payload_selected = current_session.rce_payload.clone().unwrap();
                 if !rce_payload_buf.is_empty() {
                     let is_start = rce_payload_buf.len() == rce_payload_selected.len();

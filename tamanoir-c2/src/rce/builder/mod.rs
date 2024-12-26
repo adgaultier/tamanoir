@@ -9,7 +9,7 @@ use utils::{
     UTILS_FILES,
 };
 
-use crate::{Cmd, Engine, TargetArch};
+use crate::{rce::Cmd, Engine, TargetArch};
 
 pub fn build(
     crate_path: String,
