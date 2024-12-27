@@ -129,14 +129,14 @@ pub async fn add_info(
 
 pub struct DnsProxy {
     port: u16,
-    dns_ip: Ipv4Addr,
+    forward_ip: Ipv4Addr,
     in_payload_len: usize,
 }
 impl DnsProxy {
-    pub fn new(port: u16, dns_ip: Ipv4Addr, in_payload_len: usize) -> Self {
+    pub fn new(port: u16, forward_ip: Ipv4Addr, in_payload_len: usize) -> Self {
         Self {
             port,
-            dns_ip,
+            forward_ip,
             in_payload_len,
         }
     }
@@ -184,7 +184,7 @@ impl DnsProxy {
         }
         debug!("{:?} bytes received from {:?}", len, addr);
         let data = mangle(&buf[..len], addr, self.in_payload_len, sessions.clone()).await?;
-        if let Ok(mut data) = forward_req(&data, self.dns_ip).await {
+        if let Ok(mut data) = forward_req(&data, self.forward_ip).await {
             let payload_max_len = max_payload_length(data.len());
             debug!(
                 "foward request, response : init len={} max rce payload len={}",

@@ -54,15 +54,16 @@ async fn main() -> anyhow::Result<()> {
             }
         },
         Command::Start {
-            port,
-            dns_ip,
-            payload_len,
+            dns_port,
+            dns_forward_ip,
+            dns_payload_len,
+            grpc_port,
         } => {
-            let dns_proxy = DnsProxy::new(port, dns_ip, payload_len);
+            let dns_proxy = DnsProxy::new(dns_port, dns_forward_ip, dns_payload_len);
             let sessions_store = SessionsStore::new();
             tokio::try_join!(
                 dns_proxy.serve(sessions_store.sessions.clone()),
-                serve_tonic(sessions_store)
+                serve_tonic(grpc_port, sessions_store)
             )?;
         }
     }

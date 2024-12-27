@@ -11,17 +11,17 @@ use crate::{
     Session, SessionsStore, TargetArch,
 };
 
-pub async fn serve_tonic(sessions: SessionsStore) -> anyhow::Result<()> {
-    let addr = "[::1]:50051".parse().unwrap();
-
+pub async fn serve_tonic(grpc_port: u16, sessions: SessionsStore) -> anyhow::Result<()> {
+    let addr = format!("0.0.0.0:{}", grpc_port).parse().unwrap();
     info!("Starting grpc server");
-    debug!("Grpc server is listning on  [::1]:50051");
+    debug!("Grpc server is listning on {}", addr);
     Server::builder()
         .add_service(ProxyServer::new(sessions))
         .serve(addr)
         .await?;
     Ok(())
 }
+
 #[tonic::async_trait]
 impl Proxy for SessionsStore {
     async fn get_sessions(
