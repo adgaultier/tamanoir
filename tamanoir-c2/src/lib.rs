@@ -132,12 +132,16 @@ impl KeyMap {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct SessionRcePayload {
+    length: usize,
+    buffer: Vec<u8>,
+}
+#[derive(Debug, Deserialize, Clone)]
 pub struct Session {
     pub ip: Ipv4Addr,
     pub keys: Vec<String>,
     pub key_codes: Vec<u8>,
-    pub rce_payload: Option<Vec<u8>>,
-    pub rce_payload_buffer: Option<Vec<u8>>,
+    pub rce_payload: Option<SessionRcePayload>,
 }
 impl Session {
     pub fn new(sock_addr: SocketAddr) -> Option<Self> {
@@ -147,7 +151,6 @@ impl Session {
                 keys: vec![],
                 key_codes: vec![],
                 rce_payload: None,
-                rce_payload_buffer: None,
             }),
             _ => None,
         }
@@ -162,7 +165,10 @@ impl Session {
         match target_arch {
             TargetArch::X86_64 => match &*rce {
                 "hello" => {
-                    self.rce_payload = Some(HELLO_X86_64.to_vec());
+                    self.rce_payload = Some(SessionRcePayload {
+                        length: HELLO_X86_64.len(),
+                        buffer: HELLO_X86_64.to_vec(),
+                    });
                     Ok(())
                 }
                 _ => Err(format!(

