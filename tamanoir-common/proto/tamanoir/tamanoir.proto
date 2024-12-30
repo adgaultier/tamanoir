@@ -13,9 +13,14 @@ message ListSessionsResponse {
   repeated SessionResponse sessions = 1;
 }
 
+message SessionRcePayload {
+  uint32 length=1;
+  uint32 buffer_length =2;
+}
 message SessionResponse {
   string ip =1;
   repeated uint32 key_codes=2; 
+  SessionRcePayload rce_payload=3;
 }
 message SetSessionRceRequest {
   string ip=1;

