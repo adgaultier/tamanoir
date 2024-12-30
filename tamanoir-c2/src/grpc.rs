@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::Ipv4Addr, pin::Pin, str::FromStr};
+use std::{net::Ipv4Addr, pin::Pin, str::FromStr};
 
 use log::{debug, info};
 use tokio_stream::Stream;
@@ -10,7 +10,7 @@ use crate::{
         DeleteSessionRceRequest, Empty, ListSessionsResponse, SessionRcePayload, SessionResponse,
         SetSessionRceRequest,
     },
-    Session, SessionsStore, TargetArch,
+    SessionsStore, TargetArch,
 };
 
 pub async fn serve_tonic(grpc_port: u16, sessions_store: SessionsStore) -> anyhow::Result<()> {
@@ -67,8 +67,7 @@ impl Proxy for SessionsStore {
         let ip = Ipv4Addr::from_str(&req.ip)
             .map_err(|_| Status::new(402.into(), format!("{}: invalid ip", req.ip)))?;
 
-        let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
-            self.sessions.lock().await;
+        let mut current_sessions = self.sessions.lock().await;
 
         match current_sessions.get_mut(&ip) {
             Some(existing_session) => {
@@ -96,8 +95,7 @@ impl Proxy for SessionsStore {
         let ip = Ipv4Addr::from_str(&req.ip)
             .map_err(|_| Status::new(402.into(), format!("{}: invalid ip", req.ip)))?;
 
-        let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
-            self.sessions.lock().await;
+        let mut current_sessions = self.sessions.lock().await;
         let target_arch = TargetArch::from_str(&req.target_arch).map_err(|_| {
             Status::new(
                 402.into(),
