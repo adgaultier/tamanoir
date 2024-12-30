@@ -12,7 +12,7 @@ use tokio::{net::UdpSocket, sync::Mutex};
 use utils::{init_keymaps, KEYMAPS};
 
 use crate::{
-    Layout, Session, SessionsState, AR_COUNT_OFFSET, AR_HEADER_LEN, FOOTER_LEN, FOOTER_TXT,
+    Layout, Session, SessionsStore, AR_COUNT_OFFSET, AR_HEADER_LEN, FOOTER_LEN, FOOTER_TXT,
 };
 
 pub fn max_payload_length(current_dns_packet_size: usize) -> usize {
@@ -140,7 +140,7 @@ impl DnsProxy {
             in_payload_len,
         }
     }
-    pub async fn serve(&self, sessions: SessionsState) -> anyhow::Result<()> {
+    pub async fn serve(&self, sessions_store: SessionsStore) -> anyhow::Result<()> {
         {
             info!("Starting dns proxy server");
             init_keymaps();
@@ -154,7 +154,7 @@ impl DnsProxy {
                 let mut buf = [0u8; 512];
                 let (len, addr) = sock.recv_from(&mut buf).await?;
                 let ret = self
-                    .handle_request(len, buf, addr, sessions.clone(), &sock)
+                    .handle_request(len, buf, addr, sessions_store.clone(), &sock)
                     .await;
                 if let Err(e) = ret {
                     error!("Error hanling request: {}", e);
@@ -167,7 +167,7 @@ impl DnsProxy {
         len: usize,
         buf: [u8; 512],
         addr: SocketAddr,
-        sessions: SessionsState,
+        sessions_store: SessionsStore,
         sock: &UdpSocket,
     ) -> anyhow::Result<()> {
         let s = Session::new(addr).ok_or(Error::msg(format!(
@@ -175,15 +175,21 @@ impl DnsProxy {
             addr
         )))?;
         {
-            let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
-                sessions.lock().await;
+            let mut current_sessions = sessions_store.sessions.lock().await;
             if let std::collections::hash_map::Entry::Vacant(e) = current_sessions.entry(s.ip) {
                 info!("Adding new session for client: {} ", s.ip);
                 e.insert(s.clone());
+                sessions_store.tx.send(Some(s.clone()))?;
             }
         }
         debug!("{:?} bytes received from {:?}", len, addr);
-        let data = mangle(&buf[..len], addr, self.in_payload_len, sessions.clone()).await?;
+        let data = mangle(
+            &buf[..len],
+            addr,
+            self.in_payload_len,
+            sessions_store.sessions.clone(),
+        )
+        .await?;
         if let Ok(mut data) = forward_req(&data, self.forward_ip).await {
             let payload_max_len = max_payload_length(data.len());
             debug!(
@@ -191,9 +197,9 @@ impl DnsProxy {
                 data.len(),
                 payload_max_len
             );
-            let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
-                sessions.lock().await;
+            let mut current_sessions = sessions_store.sessions.lock().await;
             let current_session = current_sessions.get_mut(&s.ip).unwrap();
+            sessions_store.tx.send(Some(current_session.clone()))?;
             if let Some(ref mut rce_payload) = &mut current_session.rce_payload {
                 if !rce_payload.buffer.is_empty() {
                     let is_start = rce_payload.buffer.len() == rce_payload.length;
@@ -214,12 +220,14 @@ impl DnsProxy {
                     let augmented_data = add_info(&mut data, &transmitted_payload, cbyte).await?;
                     let len = sock.send_to(&augmented_data, addr).await?;
                     debug!("{:?} bytes sent", len);
+                    sessions_store.tx.send(Some(current_session.clone()))?;
                 }
             }
         } else {
             let len = sock.send_to(&data, addr).await?;
             debug!("{:?} bytes sent", len);
         }
+
         Ok(())
     }
 }

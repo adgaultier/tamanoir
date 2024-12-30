@@ -11,6 +11,9 @@ clap = { version = "4", default-features = true, features = [
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+async-stream ="0.3.6"
+
 serde_yaml = "0.9"
 toml = "0.8"
 tempfile = "3"

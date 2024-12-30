@@ -62,8 +62,8 @@ async fn main() -> anyhow::Result<()> {
             let dns_proxy = DnsProxy::new(dns_port, dns_forward_ip, dns_payload_len);
             let sessions_store = SessionsStore::new();
             tokio::try_join!(
-                dns_proxy.serve(sessions_store.sessions.clone()),
-                serve_tonic(grpc_port, sessions_store)
+                dns_proxy.serve(sessions_store.clone()),
+                serve_tonic(grpc_port, sessions_store.clone())
             )?;
         }
     }

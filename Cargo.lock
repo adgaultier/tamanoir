@@ -1557,6 +1557,7 @@ name = "tamanoir-c2"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-stream",
  "clap",
  "env_logger",
  "log",
@@ -1566,6 +1567,7 @@ dependencies = [
  "tamanoir-common",
  "tempfile",
  "tokio",
+ "tokio-stream",
  "toml",
  "tonic",
  "tonic-build",

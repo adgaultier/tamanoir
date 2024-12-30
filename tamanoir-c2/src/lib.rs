@@ -5,7 +5,6 @@ pub mod rce;
 pub mod tamanoir_grpc {
     tonic::include_proto!("tamanoir");
 }
-
 use core::fmt;
 use std::{
     collections::HashMap,
@@ -16,7 +15,10 @@ use std::{
 };
 
 use serde::Deserialize;
-use tokio::sync::Mutex;
+use tokio::sync::{
+    broadcast::{self, Sender},
+    Mutex,
+};
 
 const COMMON_REPEATED_KEYS: [&str; 4] = [" 󱊷 ", " 󰌑 ", " 󰁮 ", "  "];
 const AR_COUNT_OFFSET: usize = 10;
@@ -222,14 +224,18 @@ struct PackageMetadata {
 }
 
 type SessionsState = Arc<Mutex<HashMap<Ipv4Addr, Session>>>;
+type SessionsStateWatcher = Arc<Sender<Option<Session>>>;
 #[derive(Clone)]
 pub struct SessionsStore {
     pub sessions: SessionsState,
+    pub tx: SessionsStateWatcher,
 }
 impl SessionsStore {
     pub fn new() -> Self {
+        let (tx, _) = broadcast::channel(16);
         Self {
             sessions: Arc::new(Mutex::new(HashMap::new())),
+            tx: Arc::new(tx),
         }
     }
 }
