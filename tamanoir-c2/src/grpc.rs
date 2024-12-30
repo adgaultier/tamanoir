@@ -2,7 +2,7 @@ use std::{net::Ipv4Addr, pin::Pin, str::FromStr};
 
 use log::{debug, info};
 use tokio_stream::Stream;
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::{transport::Server, Code, Request, Response, Status};
 
 use crate::{
     tamanoir_grpc::{
@@ -65,7 +65,7 @@ impl Proxy for SessionsStore {
         );
         let req = request.into_inner();
         let ip = Ipv4Addr::from_str(&req.ip)
-            .map_err(|_| Status::new(402.into(), format!("{}: invalid ip", req.ip)))?;
+            .map_err(|_| Status::new(Code::NotFound, format!("{}: invalid ip", req.ip)))?;
 
         let mut current_sessions = self.sessions.lock().await;
 
@@ -73,12 +73,12 @@ impl Proxy for SessionsStore {
             Some(existing_session) => {
                 existing_session.reset_rce_payload();
                 self.try_send(existing_session.clone())
-                    .map_err(|e| Status::new(500.into(), format!("{}", e)))?;
+                    .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
 
                 Ok(Response::new(Empty {}))
             }
             None => Err(Status::new(
-                404.into(),
+                Code::NotFound,
                 format!("{}: session not found", ip),
             )),
         }
@@ -93,12 +93,12 @@ impl Proxy for SessionsStore {
         );
         let req = request.into_inner();
         let ip = Ipv4Addr::from_str(&req.ip)
-            .map_err(|_| Status::new(402.into(), format!("{}: invalid ip", req.ip)))?;
+            .map_err(|_| Status::new(Code::InvalidArgument, format!("{}: invalid ip", req.ip)))?;
 
         let mut current_sessions = self.sessions.lock().await;
         let target_arch = TargetArch::from_str(&req.target_arch).map_err(|_| {
             Status::new(
-                402.into(),
+                Code::InvalidArgument,
                 format!("{}: unknown target arch", req.target_arch),
             )
         })?;
@@ -107,14 +107,17 @@ impl Proxy for SessionsStore {
                 match existing_session.set_rce_payload(&req.rce, target_arch) {
                     Ok(_) => {
                         self.try_send(existing_session.clone())
-                            .map_err(|e| Status::new(500.into(), format!("{}", e)))?;
+                            .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
                         Ok(Response::new(Empty {}))
                     }
-                    Err(_) => Err(Status::new(404.into(), format!("{}: invalid rce", req.rce))),
+                    Err(_) => Err(Status::new(
+                        Code::InvalidArgument,
+                        format!("{}: invalid rce", req.rce),
+                    )),
                 }
             }
             None => Err(Status::new(
-                404.into(),
+                Code::NotFound,
                 format!("{}: session not found", ip),
             )),
         }
