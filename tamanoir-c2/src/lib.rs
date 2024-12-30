@@ -157,6 +157,9 @@ impl Session {
             _ => None,
         }
     }
+    pub fn reset_rce_payload(&mut self) {
+        self.rce_payload = None;
+    }
     pub fn set_rce_payload(&mut self, rce: &str, target_arch: TargetArch) -> Result<(), String> {
         if let Some(_) = self.rce_payload {
             return Err(format!(
@@ -224,7 +227,7 @@ struct PackageMetadata {
 }
 
 type SessionsState = Arc<Mutex<HashMap<Ipv4Addr, Session>>>;
-type SessionsStateWatcher = Arc<Sender<Option<Session>>>;
+type SessionsStateWatcher = Arc<Sender<Session>>;
 #[derive(Clone)]
 pub struct SessionsStore {
     pub sessions: SessionsState,
@@ -237,5 +240,11 @@ impl SessionsStore {
             sessions: Arc::new(Mutex::new(HashMap::new())),
             tx: Arc::new(tx),
         }
+    }
+    pub fn try_send(&self, session: Session) -> anyhow::Result<()> {
+        if self.tx.receiver_count() > 0 {
+            self.tx.send(session)?;
+        }
+        Ok(())
     }
 }

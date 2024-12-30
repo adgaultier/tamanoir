@@ -7,7 +7,8 @@ use tonic::{transport::Server, Request, Response, Status};
 use crate::{
     tamanoir_grpc::{
         proxy_server::{Proxy, ProxyServer},
-        ListSessionsResponse, NoArgs, SessionRcePayload, SessionResponse, SetSessionRceRequest,
+        DeleteSessionRceRequest, Empty, ListSessionsResponse, SessionRcePayload, SessionResponse,
+        SetSessionRceRequest,
     },
     Session, SessionsStore, TargetArch,
 };
@@ -27,7 +28,7 @@ pub async fn serve_tonic(grpc_port: u16, sessions_store: SessionsStore) -> anyho
 impl Proxy for SessionsStore {
     async fn list_sessions(
         &self,
-        request: Request<NoArgs>,
+        request: Request<Empty>,
     ) -> Result<Response<ListSessionsResponse>, Status> {
         debug!(
             "<GetSessions> Got a request from {:?}",
@@ -54,11 +55,39 @@ impl Proxy for SessionsStore {
         let reply = ListSessionsResponse { sessions };
         Ok(Response::new(reply))
     }
+    async fn delete_session_rce(
+        &self,
+        request: Request<DeleteSessionRceRequest>,
+    ) -> Result<Response<Empty>, Status> {
+        debug!(
+            "<DeleteSessionRce> Got a request from {:?}",
+            request.remote_addr()
+        );
+        let req = request.into_inner();
+        let ip = Ipv4Addr::from_str(&req.ip)
+            .map_err(|_| Status::new(402.into(), format!("{}: invalid ip", req.ip)))?;
 
+        let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
+            self.sessions.lock().await;
+
+        match current_sessions.get_mut(&ip) {
+            Some(existing_session) => {
+                existing_session.reset_rce_payload();
+                self.try_send(existing_session.clone())
+                    .map_err(|e| Status::new(500.into(), format!("{}", e)))?;
+
+                Ok(Response::new(Empty {}))
+            }
+            None => Err(Status::new(
+                404.into(),
+                format!("{}: session not found", ip),
+            )),
+        }
+    }
     async fn set_session_rce(
         &self,
         request: Request<SetSessionRceRequest>,
-    ) -> Result<Response<NoArgs>, Status> {
+    ) -> Result<Response<Empty>, Status> {
         debug!(
             "<SetSessionRce> Got a request from {:?}",
             request.remote_addr()
@@ -79,8 +108,9 @@ impl Proxy for SessionsStore {
             Some(existing_session) => {
                 match existing_session.set_rce_payload(&req.rce, target_arch) {
                     Ok(_) => {
-                        self.tx.send(Some(existing_session.clone())).unwrap();
-                        Ok(Response::new(NoArgs {}))
+                        self.try_send(existing_session.clone())
+                            .map_err(|e| Status::new(500.into(), format!("{}", e)))?;
+                        Ok(Response::new(Empty {}))
                     }
                     Err(_) => Err(Status::new(404.into(), format!("{}: invalid rce", req.rce))),
                 }
@@ -96,13 +126,13 @@ impl Proxy for SessionsStore {
 
     async fn watch_sessions(
         &self,
-        _request: Request<NoArgs>,
+        _request: Request<Empty>,
     ) -> Result<Response<Self::WatchSessionsStream>, Status> {
         let mut rx = self.tx.subscribe();
 
         let stream = async_stream::try_stream! {
-        while let Ok(maybe_session) = rx.recv().await {
-            if let Some(session) = maybe_session {
+        while let Ok(session) = rx.recv().await {
+
                 let rce_payload:Option<SessionRcePayload> = match session.rce_payload   {
                     Some(payload) => Some(SessionRcePayload {length:payload.length as u32,buffer_length:payload.buffer.len() as u32}),
                     _ => None,
@@ -114,9 +144,9 @@ impl Proxy for SessionsStore {
                     rce_payload: rce_payload
                 };
 
-            }
+
         }
-        println!(" /// done sending");};
+        };
         Ok(Response::new(Box::pin(stream) as Self::WatchSessionsStream))
     }
 }

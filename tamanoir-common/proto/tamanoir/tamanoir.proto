@@ -3,7 +3,7 @@ syntax = "proto3";
 package tamanoir;
 
 
-message NoArgs {}
+message Empty {}
 message StatusResponse {
   bool success=1;
   string err=2;
@@ -27,9 +27,13 @@ message SetSessionRceRequest {
   string rce=2;
   string target_arch=3; 
 }
+message DeleteSessionRceRequest {
+  string ip=1;
+}
 
 service Proxy {
-  rpc ListSessions (NoArgs) returns ( ListSessionsResponse) {}
-  rpc WatchSessions (NoArgs) returns ( stream SessionResponse) {}
-  rpc SetSessionRce (SetSessionRceRequest) returns (NoArgs) {}
+  rpc ListSessions (Empty) returns ( ListSessionsResponse) {}
+  rpc WatchSessions (Empty) returns ( stream SessionResponse) {}
+  rpc SetSessionRce (SetSessionRceRequest) returns (Empty) {}
+  rpc DeleteSessionRce (DeleteSessionRceRequest) returns (Empty) {}
 }

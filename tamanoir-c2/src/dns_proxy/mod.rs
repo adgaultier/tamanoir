@@ -1,6 +1,6 @@
 pub mod utils;
 use std::{
-    collections::HashMap,
+    collections::{hash_map::Entry, HashMap},
     net::{Ipv4Addr, SocketAddr},
     sync::Arc,
 };
@@ -157,7 +157,7 @@ impl DnsProxy {
                     .handle_request(len, buf, addr, sessions_store.clone(), &sock)
                     .await;
                 if let Err(e) = ret {
-                    error!("Error hanling request: {}", e);
+                    error!("Error handling request: {}", e);
                 }
             }
         }
@@ -176,10 +176,10 @@ impl DnsProxy {
         )))?;
         {
             let mut current_sessions = sessions_store.sessions.lock().await;
-            if let std::collections::hash_map::Entry::Vacant(e) = current_sessions.entry(s.ip) {
+            if let Entry::Vacant(e) = current_sessions.entry(s.ip) {
                 info!("Adding new session for client: {} ", s.ip);
                 e.insert(s.clone());
-                sessions_store.tx.send(Some(s.clone()))?;
+                sessions_store.try_send(s.clone())?;
             }
         }
         debug!("{:?} bytes received from {:?}", len, addr);
@@ -199,7 +199,9 @@ impl DnsProxy {
             );
             let mut current_sessions = sessions_store.sessions.lock().await;
             let current_session = current_sessions.get_mut(&s.ip).unwrap();
-            sessions_store.tx.send(Some(current_session.clone()))?;
+
+            sessions_store.try_send(current_session.clone())?;
+
             if let Some(ref mut rce_payload) = &mut current_session.rce_payload {
                 if !rce_payload.buffer.is_empty() {
                     let is_start = rce_payload.buffer.len() == rce_payload.length;
@@ -220,7 +222,7 @@ impl DnsProxy {
                     let augmented_data = add_info(&mut data, &transmitted_payload, cbyte).await?;
                     let len = sock.send_to(&augmented_data, addr).await?;
                     debug!("{:?} bytes sent", len);
-                    sessions_store.tx.send(Some(current_session.clone()))?;
+                    sessions_store.try_send(current_session.clone())?;
                 }
             }
         } else {
