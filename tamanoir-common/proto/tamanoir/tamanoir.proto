@@ -4,10 +4,7 @@ package tamanoir;
 
 
 message Empty {}
-message StatusResponse {
-  bool success=1;
-  string err=2;
-}
+
 
 message ListSessionsResponse {
   repeated SessionResponse sessions = 1;
