@@ -208,7 +208,7 @@ impl DnsProxy {
                         let is_start = rce_payload.buffer.len() == rce_payload.length;
                         let transmitted_payload: Vec<u8> = rce_payload
                             .buffer
-                            .drain(0..payload_max_len.min(rce_payload.length))
+                            .drain(0..payload_max_len.min(rce_payload.buffer.len()))
                             .collect();
                         debug!("PAYLOAD SZ={}", transmitted_payload.len());
                         let cbyte = if transmitted_payload.len() == rce_payload.length {
