@@ -170,7 +170,7 @@ fn _start() -> ! {
             argv.as_ptr() as usize,
             0,
         );
-        exit(0)
+        loop {}
     };
 }
 #[panic_handler]
