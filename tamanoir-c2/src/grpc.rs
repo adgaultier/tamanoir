@@ -110,9 +110,9 @@ impl Proxy for SessionsStore {
                             .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
                         Ok(Response::new(Empty {}))
                     }
-                    Err(_) => Err(Status::new(
+                    Err(e) => Err(Status::new(
                         Code::InvalidArgument,
-                        format!("{}: invalid rce", req.rce),
+                        format!("{}: invalid rce ({})", req.rce, e),
                     )),
                 }
             }
