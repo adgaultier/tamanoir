@@ -4,7 +4,7 @@ _default:
 
 
 _build-ebpf:
-    cd ebpf && cargo build --release
+    cd tamanoir-ebpf && cargo build --release
 
 
 # Build Tamanoir
