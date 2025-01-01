@@ -9,6 +9,7 @@ use core::fmt;
 use std::{
     collections::HashMap,
     fmt::Display,
+    fs,
     net::{Ipv4Addr, SocketAddr},
     str::FromStr,
     sync::Arc,
@@ -176,10 +177,14 @@ impl Session {
                     });
                     Ok(())
                 }
-                _ => Err(format!(
-                    "{} payload unavailable for arch {:#?}",
-                    rce, target_arch
-                )),
+                s => {
+                    let data: Vec<u8> = fs::read(s).map_err(|e| format!("{}", e))?;
+                    self.rce_payload = Some(SessionRcePayload {
+                        length: data.len(),
+                        buffer: data,
+                    });
+                    Ok(())
+                }
             },
             _ => Err(format!("target arch {:#?} unavailable", target_arch)),
         }
