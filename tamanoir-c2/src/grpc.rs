@@ -40,6 +40,8 @@ impl Proxy for SessionsStore {
         for s in current_sessions.values().into_iter() {
             let rce_payload: Option<SessionRcePayload> = match &s.rce_payload {
                 Some(payload) => Some(SessionRcePayload {
+                    name: payload.name.clone(),
+                    target_arch: payload.target_arch.to_string(),
                     length: payload.length as u32,
                     buffer_length: payload.buffer.len() as u32,
                 }),
@@ -83,6 +85,7 @@ impl Proxy for SessionsStore {
             )),
         }
     }
+
     async fn set_session_rce(
         &self,
         request: Request<SetSessionRceRequest>,
@@ -135,7 +138,7 @@ impl Proxy for SessionsStore {
         while let Ok(session) = rx.recv().await {
 
                 let rce_payload:Option<SessionRcePayload> = match session.rce_payload   {
-                    Some(payload) => Some(SessionRcePayload {length:payload.length as u32,buffer_length:payload.buffer.len() as u32}),
+                    Some(payload) => Some(SessionRcePayload {name:payload.name,target_arch:payload.target_arch.to_string(),length:payload.length as u32,buffer_length:payload.buffer.len() as u32}),
                     _ => None,
                 };
 

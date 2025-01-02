@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::Error;
-use log::{debug, error, info, log_enabled, Level};
+use log::{debug, error, info};
 use tamanoir_common::ContinuationByte;
 use tokio::{net::UdpSocket, sync::Mutex};
 use utils::{init_keymaps, KEYMAPS};

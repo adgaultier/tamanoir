@@ -5,7 +5,7 @@ use tamanoir_c2::{
     dns_proxy::DnsProxy,
     grpc::serve_tonic,
     rce::{builder::build, tester::test_bin},
-    SessionsStore, TargetArch,
+    SessionsStore,
 };
 
 #[tokio::main]
@@ -20,9 +20,8 @@ async fn main() -> anyhow::Result<()> {
                 engine,
                 crate_path,
                 build_vars,
-                out_dir,
             } => {
-                if let Err(e) = build(crate_path, engine, target_arch, build_vars, out_dir) {
+                if let Err(e) = build(crate_path, engine, target_arch, build_vars) {
                     error!("{}", e);
                     std::process::exit(1);
                 }
@@ -31,25 +30,6 @@ async fn main() -> anyhow::Result<()> {
                 if let Err(e) = test_bin(bin_path) {
                     error!("{}", e);
                     std::process::exit(1);
-                }
-            }
-            RceCommand::BuildAll {
-                engine,
-                crate_path,
-                build_vars,
-                out_dir,
-            } => {
-                for arch in TargetArch::ALL {
-                    if let Err(e) = build(
-                        crate_path.clone(),
-                        engine.clone(),
-                        arch,
-                        build_vars.clone(),
-                        out_dir.clone(),
-                    ) {
-                        error!("{}", e);
-                        std::process::exit(1);
-                    }
                 }
             }
         },

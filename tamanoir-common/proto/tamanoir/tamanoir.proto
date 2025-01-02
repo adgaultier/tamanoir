@@ -11,8 +11,10 @@ message ListSessionsResponse {
 }
 
 message SessionRcePayload {
-  uint32 length=1;
-  uint32 buffer_length =2;
+  string name=1;
+  string target_arch=2;
+  uint32 length=3;
+  uint32 buffer_length =4;
 }
 message SessionResponse {
   string ip =1;

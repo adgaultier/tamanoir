@@ -49,20 +49,8 @@ pub enum RceCommand {
         build_vars: String,
         #[clap(short, long)]
         crate_path: String,
-        #[clap(short, long)]
-        out_dir: String,
     },
-    #[command(about = "Build shell code payload for all available aritectures")]
-    BuildAll {
-        #[clap(short, long, default_value = "docker")]
-        engine: Engine,
-        #[clap(short, long, default_value = "")]
-        build_vars: String,
-        #[clap(short, long)]
-        crate_path: String,
-        #[clap(short, long)]
-        out_dir: String,
-    },
+
     #[command(about = "Test a shellcode against current architecture")]
     Test {
         #[clap(short, long)]
