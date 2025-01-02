@@ -30,9 +30,18 @@ message DeleteSessionRceRequest {
   string ip=1;
 }
 
-service Proxy {
+message AvailableRceResponse {
+  repeated SessionRcePayload rce_list =1;
+}
+
+
+service Session {
   rpc ListSessions (Empty) returns ( ListSessionsResponse) {}
   rpc WatchSessions (Empty) returns ( stream SessionResponse) {}
+
+}
+service Rce {
   rpc SetSessionRce (SetSessionRceRequest) returns (Empty) {}
   rpc DeleteSessionRce (DeleteSessionRceRequest) returns (Empty) {}
+  rpc ListAvailableRce (Empty) returns (AvailableRceResponse) {}
 }
