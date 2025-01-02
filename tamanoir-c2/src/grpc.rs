@@ -9,20 +9,27 @@ use tonic::{transport::Server, Code, Request, Response, Status};
 use crate::{
     tamanoir_grpc::{
         rce_server::{Rce, RceServer},
+        remote_shell_server::RemoteShellServer,
         session_server::{Session, SessionServer},
         AvailableRceResponse, DeleteSessionRceRequest, Empty, ListSessionsResponse,
         SessionRcePayload, SessionResponse, SetSessionRceRequest,
     },
+    tcp_shell::TcpShell,
     SessionsStore, TargetArch,
 };
 
-pub async fn serve_tonic(grpc_port: u16, sessions_store: SessionsStore) -> anyhow::Result<()> {
+pub async fn serve_tonic(
+    grpc_port: u16,
+    sessions_store: SessionsStore,
+    remote_shell: TcpShell,
+) -> anyhow::Result<()> {
     let addr = format!("0.0.0.0:{}", grpc_port).parse().unwrap();
     info!("Starting grpc server");
     debug!("Grpc server is listening on {}", addr);
     Server::builder()
         .add_service(SessionServer::new(sessions_store.clone()))
         .add_service(RceServer::new(sessions_store))
+        .add_service(RemoteShellServer::new(remote_shell))
         .serve(addr)
         .await?;
     Ok(())
