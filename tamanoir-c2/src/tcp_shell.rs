@@ -2,20 +2,23 @@ use std::{pin::Pin, sync::Arc};
 
 use log::{error, info};
 use tokio::{
-    io::AsyncReadExt,
-    net::TcpListener,
-    sync::broadcast::{self, Sender},
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::{TcpListener, TcpStream},
+    sync::{
+        broadcast::{self, Sender},
+        Mutex,
+    },
 };
 use tokio_stream::Stream;
-use tonic::{Request, Response, Status};
+use tonic::{Code, Request, Response, Status};
 
-use crate::tamanoir_grpc::{remote_shell_server::RemoteShell, Empty, ShellStdOut};
-type ShellStdOutWatcher = Arc<Sender<String>>;
+use crate::tamanoir_grpc::{remote_shell_server::RemoteShell, Empty, ShellStd};
+type ShellStdWatcher = Arc<Sender<String>>;
 
-#[derive(Clone)]
 pub struct TcpShell {
     pub port: u16,
-    pub tx: ShellStdOutWatcher,
+    pub tx: ShellStdWatcher,
+    pub socket: Option<Arc<Mutex<TcpStream>>>,
 }
 
 impl TcpShell {
@@ -24,6 +27,7 @@ impl TcpShell {
         TcpShell {
             port,
             tx: Arc::new(tx),
+            socket: None,
         }
     }
 
@@ -41,7 +45,7 @@ impl TcpShell {
         info!("New connection from: {}", remote_addr);
 
         let mut buffer = vec![0; 1024];
-
+        self.socket = Some(Arc::new(Mutex::new(socket)));
         loop {
             // Read data from the socket
             match socket.read(&mut buffer).await {
@@ -70,7 +74,7 @@ impl TcpShell {
 #[tonic::async_trait]
 impl RemoteShell for TcpShell {
     type WatchShellStdOutStream =
-        Pin<Box<dyn Stream<Item = Result<ShellStdOut, Status>> + Send + 'static>>;
+        Pin<Box<dyn Stream<Item = Result<ShellStd, Status>> + Send + 'static>>;
 
     async fn watch_shell_std_out(
         &self,
@@ -80,7 +84,7 @@ impl RemoteShell for TcpShell {
 
         let stream = async_stream::try_stream! {
         while let Ok(msg) = rx.recv().await {
-                yield ShellStdOut {
+                yield ShellStd {
                     message: msg,
                 };
         }
@@ -88,5 +92,20 @@ impl RemoteShell for TcpShell {
         Ok(Response::new(
             Box::pin(stream) as Self::WatchShellStdOutStream
         ))
+    }
+    async fn send_shell_std_in(
+        &self,
+        request: Request<ShellStd>,
+    ) -> Result<Response<Empty>, Status> {
+        let req = request.into_inner();
+        if let Some(sock) = &self.socket {
+            let mut sock = sock.lock().await;
+            sock.write_all(req.message.as_bytes())
+                .await
+                .map_err(|_| Status::new(Code::Internal, "couldnt write to socket"))?;
+            return Ok(Response::new(Empty {}));
+        } else {
+            Err(Status::new(Code::NotFound, "socket not created"))
+        }
     }
 }

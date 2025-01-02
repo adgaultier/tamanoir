@@ -33,7 +33,7 @@ message DeleteSessionRceRequest {
 message AvailableRceResponse {
   repeated SessionRcePayload rce_list =1;
 }
-message ShellStdOut {
+message ShellStd {
   string message=1;
 }
 
@@ -48,6 +48,8 @@ service Rce {
   rpc ListAvailableRce (Empty) returns (AvailableRceResponse) {}
 }
 service RemoteShell {
-  rpc WatchShellStdOut (Empty) returns ( stream ShellStdOut) {}
+  rpc WatchShellStdOut (Empty) returns ( stream ShellStd) {}
+  rpc SendShellStdIn (ShellStd) returns (Empty) {}
+
 
 }

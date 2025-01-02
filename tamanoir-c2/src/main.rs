@@ -45,7 +45,7 @@ async fn main() -> anyhow::Result<()> {
             let mut remote_shell = TcpShell::new(8082);
             tokio::try_join!(
                 dns_proxy.serve(sessions_store.clone()),
-                serve_tonic(grpc_port, sessions_store.clone(), remote_shell.clone()),
+                serve_tonic(grpc_port, sessions_store.clone(), remote_shell.tx.clone()),
                 remote_shell.serve()
             )?;
         }

