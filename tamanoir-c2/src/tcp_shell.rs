@@ -11,6 +11,8 @@ use tonic::{Request, Response, Status};
 
 use crate::tamanoir_grpc::{remote_shell_server::RemoteShell, Empty, ShellStdOut};
 type ShellStdOutWatcher = Arc<Sender<String>>;
+
+#[derive(Clone)]
 pub struct TcpShell {
     pub port: u16,
     pub tx: ShellStdOutWatcher,
