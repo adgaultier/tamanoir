@@ -93,7 +93,9 @@ impl Session for SessionsStore {
 }
 
 fn extract_rce_metadata(path: String) -> Option<(String, TargetArch)> {
-    let trimmed = path.replace("tamanoir-rce-", "").replace(".bin", "");
+    let p: Vec<&str> = path.split("/").collect();
+    let p = p[p.len() - 1];
+    let trimmed: String = p.replace("tamanoir-rce-", "").replace(".bin", "");
     let split: Vec<&str> = trimmed.split("_").collect();
     if split.len() < 2 {
         return None;
