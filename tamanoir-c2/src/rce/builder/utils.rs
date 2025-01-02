@@ -34,15 +34,11 @@ pub fn parse_package_name(crate_path: String) -> Result<String, String> {
     }
 }
 pub fn format_env_arg(s: &str) -> Result<String, String> {
-    if let Some(eq_pos) = s.find('=') {
-        let (key, value) = s.split_at(eq_pos);
-        if key.is_empty() || value.is_empty() {
-            return Err(format!("{} should follow key=value pattern", s));
-        } else {
-            return Ok(format!("--env {}={}", key.trim(), value.trim()));
-        }
+    let split: Vec<&str> = s.split('=').map(|k| k.trim()).collect();
+    if split.len() != 2 || split.iter().any(|k| (*k).is_empty()) {
+        return Err(format!("{} should follow key=value pattern", s));
     }
-    Err(format!("{} should follow key=value pattern", s))
+    Ok(format!("--env {}={}", split[0], split[1]))
 }
 pub fn format_build_vars_for_cross(build_vars: String) -> Result<String, String> {
     let build_vars: Result<Vec<_>, _> = build_vars.split_whitespace().map(format_env_arg).collect();
