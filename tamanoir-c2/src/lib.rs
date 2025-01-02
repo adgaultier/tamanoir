@@ -2,6 +2,7 @@ pub mod cli;
 pub mod dns_proxy;
 pub mod grpc;
 pub mod rce;
+pub mod tcp_shell;
 pub mod tamanoir_grpc {
     tonic::include_proto!("tamanoir");
 }

