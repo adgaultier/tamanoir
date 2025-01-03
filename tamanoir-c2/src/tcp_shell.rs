@@ -53,7 +53,9 @@ impl TcpShell {
         let write_task = tokio::spawn(async move {
             while let Some(msg) = rx.lock().await.recv().await {
                 info!("STDIN RECEIVED: {}", msg);
-                if let Err(e) = writer.write_all(msg.as_bytes()).await {
+                let mut cmd = Vec::from(msg.as_bytes());
+                cmd.push(10u8); //add ENTER
+                if let Err(e) = writer.write_all(cmd.as_slice()).await {
                     error!("Error writing to socket: {}", e);
                     break;
                 }
