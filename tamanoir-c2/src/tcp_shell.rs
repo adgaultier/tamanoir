@@ -1,6 +1,6 @@
 use std::{pin::Pin, sync::Arc};
 
-use log::{error, info};
+use log::{debug, error, info};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,
@@ -73,7 +73,7 @@ impl TcpShell {
                     }
                     Ok(n) => {
                         let received = String::from_utf8_lossy(&buffer[..n]);
-                        info!("Received: {}", received);
+                        debug!("Received: {}", received);
                         if let Err(_) = Self::try_send(tx.clone(), received.into()) {
                             error!("error sending stdout message");
                             break;
