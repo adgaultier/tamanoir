@@ -17,11 +17,13 @@ pub enum Command {
     #[command(about = "Start the dns proxy / c2 server")]
     Start {
         #[clap(short, long, default_value = "53")]
-        port: u16,
+        dns_port: u16,
         #[clap(long, default_value = "8.8.8.8")]
-        dns_ip: Ipv4Addr,
+        dns_forward_ip: Ipv4Addr,
         #[clap(long, default_value = "8")]
-        payload_len: usize,
+        dns_payload_len: usize,
+        #[clap(short, long, default_value = "50051")]
+        grpc_port: u16,
     },
 }
 
@@ -47,20 +49,8 @@ pub enum RceCommand {
         build_vars: String,
         #[clap(short, long)]
         crate_path: String,
-        #[clap(short, long)]
-        out_dir: String,
     },
-    #[command(about = "Build shell code payload for all available aritectures")]
-    BuildAll {
-        #[clap(short, long, default_value = "docker")]
-        engine: Engine,
-        #[clap(short, long, default_value = "")]
-        build_vars: String,
-        #[clap(short, long)]
-        crate_path: String,
-        #[clap(short, long)]
-        out_dir: String,
-    },
+
     #[command(about = "Test a shellcode against current architecture")]
     Test {
         #[clap(short, long)]

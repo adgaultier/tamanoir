@@ -1,7 +1,13 @@
 pub mod utils;
 
-use std::{env, fs::File, io::Write, str::FromStr};
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    str::FromStr,
+};
 
+use home::home_dir;
 use log::{info, log_enabled, Level};
 use tempfile::{Builder, TempDir};
 use utils::{
@@ -9,22 +15,33 @@ use utils::{
     UTILS_FILES,
 };
 
-use crate::{Cmd, Engine, TargetArch};
+use crate::{rce::Cmd, Engine, TargetArch};
 
 pub fn build(
     crate_path: String,
     engine: Engine,
     target: TargetArch,
     build_vars: String,
-    out_dir: String,
 ) -> Result<(), String> {
     let current_arch = env::consts::ARCH;
 
     let should_x_compile = TargetArch::from_str(current_arch).unwrap() != target;
+    let mut build_dir = home_dir().unwrap();
+    build_dir.push(".tamanoir/bins");
+    if !build_dir.exists() {
+        fs::create_dir_all(build_dir.clone()).map_err(|e| {
+            format!(
+                "couldn't create build directory ({}): {}",
+                build_dir.display(),
+                e
+            )
+        })?;
+    }
     let tmp_dir = Builder::new()
         .prefix("tamanoir-rce")
         .tempdir()
         .map_err(|_| "Error creating temp dir")?;
+    let out_dir = format!("{}", build_dir.display());
     if should_x_compile {
         x_compile(
             engine,

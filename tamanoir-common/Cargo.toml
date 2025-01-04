@@ -8,6 +8,3 @@ edition = "2021"
 [lib]
 path = "src/lib.rs"
 
-[dependencies]
-prost-types = "0.13"
-serde = { version = "1", features = ["derive"] }
