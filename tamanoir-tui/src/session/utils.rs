@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::OnceLock};
 
-use crate::{KeyMap, Layout};
+use super::{KeyMap, Layout};
 
 pub static KEYMAPS: OnceLock<HashMap<u8, KeyMap>> = OnceLock::new();
 const AZERTY: &str = include_str!("../../../assets/layouts/azerty.yml");

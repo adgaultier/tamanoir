@@ -27,7 +27,7 @@ tamanoir-run proxy_ip="192.168.1.15" hijack_ip="8.8.8.8" layout="1" log_level="i
 
 # Run tui
 tui-run proxy_ip="192.168.1.15" grpc_port="50051" log_level="info":
-    RUST_LOG={{log_level}} sudo -E target/release/tamanoir -i {{proxy_ip}} -p {{grpc_port}}
+    RUST_LOG={{log_level}} target/release/tamanoir-tui -i {{proxy_ip}} -p {{grpc_port}}
     
 # Run c2 server
 c2-run:

@@ -5,6 +5,7 @@ use crate::{
     app::{App, AppResult},
     event::Event,
     notifications::{Notification, NotificationLevel},
+    tamanoir_grpc::SessionResponse,
 };
 
 pub async fn handle_key_events(
@@ -23,7 +24,12 @@ pub async fn handle_key_events(
             }
         }
         KeyCode::Char('l') => {
-            let _ = app.grpc.get_sessions().await?;
+            dbg!(app.grpc.sessions.keys());
+        }
+        KeyCode::Char('p') => {
+            let s = app.grpc.sessions.get("192.168.1.180").ok_or("Not found")?;
+            let keys = s.parse_keycodes(crate::session::Layout::Azerty)?;
+            dbg!(SessionResponse::format_keys(keys));
         }
         _ => {}
     }

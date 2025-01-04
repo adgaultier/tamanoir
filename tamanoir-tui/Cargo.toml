@@ -12,6 +12,8 @@ anyhow = { workspace = true }
 clap = { workspace = true }
 prost = "0.13"
 tonic = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
 
 [build-dependencies]
 tonic-build = "0.12"
