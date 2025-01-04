@@ -14,9 +14,36 @@ async fn main() -> AppResult<()> {
     Command::new("tamanoir-tui")
         .about(crate_description!())
         .version(crate_version!())
+        .arg(
+            Arg::new("ip")
+                .long("ip")
+                .short('i')
+                .takes_value(true)
+                .required(true)
+                .validator(|v| {
+                    v.parse::<Ipv4Addr>()
+                        .map(|_| ())
+                        .map_err(|_| "Invalid IPv4 address".to_string())
+                })
+                .help("IP address to connect to"),
+        )
+        .arg(
+            Arg::new("port")
+                .long("port")
+                .short('p')
+                .takes_value(true)
+                .required(true)
+                .validator(|v| {
+                    v.parse::<u16>()
+                        .map(|_| ())
+                        .map_err(|_| "Invalid port".to_string())
+                })
+                .help("Port number to use"),
+        )
         .get_matches();
-
-    let mut app = App::new().await?;
+    let ip: Ipv4Addr = matches.value_of("ip").unwrap().parse().unwrap();
+    let port: u16 = matches.value_of("port").unwrap().parse().unwrap()
+    let mut app = App::new(ip,port).await?;
 
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;

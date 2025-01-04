@@ -1,4 +1,4 @@
-use std::error;
+use std::{error, net::Ipv4Addr};
 
 use anyhow::Result;
 use ratatui::Frame;
@@ -15,11 +15,11 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new() -> AppResult<Self> {
+    pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
         Ok(Self {
             running: true,
             notifications: Vec::new(),
-            grpc: Grpc::new().await?,
+            grpc: Grpc::new(ip, port).await?,
         })
     }
 

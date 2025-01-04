@@ -16,9 +16,9 @@ pub struct Grpc {
 }
 
 impl Grpc {
-    pub async fn new() -> AppResult<Self> {
+    pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
         let session_client: SessionClient<Channel> =
-            SessionClient::connect("http://192.168.1.75:50051").await?;
+            SessionClient::connect(format!("http://{}:{}", ip, port)).await?;
 
         // Initial hashmap
 
