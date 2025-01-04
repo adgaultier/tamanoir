@@ -22,6 +22,9 @@ pub async fn handle_key_events(
                 app.quit();
             }
         }
+        KeyCode::Char('l') => {
+            let _ = app.grpc.get_sessions().await?;
+        }
         _ => {}
     }
 

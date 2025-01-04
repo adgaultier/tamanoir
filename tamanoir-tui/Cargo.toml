@@ -10,3 +10,8 @@ ratatui = "0.29"
 tokio = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
+prost = "0.13"
+tonic = "0.12"
+
+[build-dependencies]
+tonic-build = "0.12"

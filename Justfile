@@ -9,12 +9,16 @@ _build-ebpf:
 
 # Build Tamanoir
 build-tamanoir:
-    just _build-ebpf 
+    just _build-ebpf
     cargo build -p tamanoir --release
 
 # Build C&C server
 build-c2:
     cargo build -p tamanoir-c2 --release
+
+# TUI
+run-tui:
+    cargo run -p tamanoir-tui
 
 # Run Tamanoir
 run proxy_ip="192.168.1.15" hijack_ip="8.8.8.8" layout="1" log_level="info":
@@ -24,7 +28,7 @@ run proxy_ip="192.168.1.15" hijack_ip="8.8.8.8" layout="1" log_level="info":
 c2_list_rce c2ip="192.168.1.15":
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{}' '{{c2ip}}:50051' tamanoir.Rce/ListAvailableRce
 c2_list_services c2ip="192.168.1.15":
-    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto  '{{c2ip}}:50051' list 
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto  '{{c2ip}}:50051' list
 c2_watch c2ip="192.168.1.15":
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{}' '{{c2ip}}:50051' tamanoir.Session/WatchSessions
 c2_remote_shell_watch c2ip="192.168.1.15":
@@ -54,5 +58,4 @@ _atoi ipv4_address:
 	((IPNUM+=${IP%%.*}*$((256**$((3-${i}))))))
 	IP=${IP#*.}
 	done
-	echo $IPNUM 
-
+	echo $IPNUM

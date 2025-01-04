@@ -3,7 +3,7 @@ use std::error;
 use anyhow::Result;
 use ratatui::Frame;
 
-use crate::notifications::Notification;
+use crate::{grpc::Grpc, notifications::Notification};
 
 pub type AppResult<T> = Result<T, Box<dyn error::Error>>;
 
@@ -11,19 +11,19 @@ pub type AppResult<T> = Result<T, Box<dyn error::Error>>;
 pub struct App {
     pub running: bool,
     pub notifications: Vec<Notification>,
+    pub grpc: Grpc,
 }
 
 impl App {
-    pub async fn new() -> Result<Self> {
+    pub async fn new() -> AppResult<Self> {
         Ok(Self {
             running: true,
             notifications: Vec::new(),
+            grpc: Grpc::new().await?,
         })
     }
 
-    pub fn render(&mut self, frame: &mut Frame) {
-        todo!()
-    }
+    pub fn render(&mut self, frame: &mut Frame) {}
 
     pub fn quit(&mut self) {
         self.running = false;

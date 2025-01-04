@@ -1607,8 +1607,11 @@ dependencies = [
  "clap",
  "crossterm",
  "futures",
+ "prost",
  "ratatui",
  "tokio",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]
