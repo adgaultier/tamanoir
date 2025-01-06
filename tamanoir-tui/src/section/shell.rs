@@ -4,7 +4,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Margin, Rect},
     style::{palette::tailwind, Color, Modifier, Style, Stylize},
-    text::{Line, Text},
+    text::Text,
     widgets::{
         Block, BorderType, HighlightSpacing, Paragraph, Row, Scrollbar, ScrollbarOrientation,
         ScrollbarState, Table, TableState,
@@ -14,7 +14,18 @@ use ratatui::{
 use tui_input::{backend::crossterm::EventHandler, Input};
 
 use crate::{app::AppResult, grpc::RemoteShellServiceClient};
+pub type ShellCmdHistory = Arc<RwLock<Vec<ShellCmd>>>;
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum ShellStdType {
+    StdIn,
+    StdOut,
+}
+#[derive(Debug, Clone)]
+pub struct ShellCmd {
+    pub std_type: ShellStdType,
+    pub inner: String,
+}
 #[derive(Debug)]
 struct TableColors {
     buffer_bg: Color,
@@ -50,11 +61,12 @@ pub struct ShellSection {
     state: TableState,
     scroll_state: ScrollbarState,
     color_index: usize,
-    items: Arc<RwLock<Vec<String>>>,
+    items: ShellCmdHistory,
+    history_index: usize,
 }
 
 impl ShellSection {
-    pub fn new(app_shell: Arc<RwLock<Vec<String>>>) -> Self {
+    pub fn new(app_shell: ShellCmdHistory) -> Self {
         Self {
             shell_input: Input::default(),
             colors: TableColors::new(&PALETTES[2]),
@@ -62,6 +74,7 @@ impl ShellSection {
             scroll_state: ScrollbarState::new(0),
             color_index: 0,
             items: app_shell,
+            history_index: 0,
         }
     }
     fn compute_scroll_height(&self, idx: usize) -> usize {
@@ -71,7 +84,7 @@ impl ShellSection {
             .iter()
             .take(idx)
             .fold(0, |acc, x| {
-                acc + x.chars().filter(|&c| c == '\n').count() + 1
+                acc + x.inner.chars().filter(|&c| c == '\n').count() + 1
             })
     }
     pub fn next_row(&mut self) {
@@ -103,6 +116,12 @@ impl ShellSection {
         self.state.select(Some(i));
         self.scroll_state = self.scroll_state.position(self.compute_scroll_height(i));
     }
+    pub fn unselect(&mut self) {
+        self.state.select(None);
+        self.scroll_state = self
+            .scroll_state
+            .position(self.compute_scroll_height(self.items.read().unwrap().len()));
+    }
     pub fn next_color(&mut self) {
         self.color_index = (self.color_index + 1) % PALETTES.len();
     }
@@ -114,7 +133,15 @@ impl ShellSection {
     fn set_colors(&mut self) {
         self.colors = TableColors::new(&PALETTES[self.color_index]);
     }
-
+    fn get_stdin_history(&self) -> Vec<String> {
+        self.items
+            .read()
+            .unwrap()
+            .iter()
+            .filter(|cmd| cmd.std_type == ShellStdType::StdIn)
+            .map(|cmd| cmd.inner.clone())
+            .collect::<Vec<String>>()
+    }
     pub fn render(&mut self, frame: &mut Frame, block: Rect) {
         self.set_colors();
 
@@ -139,9 +166,12 @@ impl ShellSection {
                 _ => self.colors.alt_row_color,
             };
 
-            let length = data.chars().filter(|&c| c == '\n').count() + 1;
-
-            Row::new([data.clone()])
+            let length = data.inner.chars().filter(|&c| c == '\n').count() + 1;
+            let text = match data.std_type {
+                ShellStdType::StdIn => format!("{}", data.inner),
+                ShellStdType::StdOut => format!("{}", data.inner),
+            };
+            Row::new([text])
                 .style(Style::new().fg(self.colors.row_fg).bg(color))
                 .height(length as u16)
         });
@@ -205,6 +235,25 @@ impl ShellSection {
             KeyCode::Enter => {
                 shell_client.send_cmd(self.shell_input.to_string()).await?;
                 self.shell_input.reset();
+                self.history_index = self.get_stdin_history().len();
+                self.unselect();
+            }
+            KeyCode::Up => {
+                self.history_index = self.history_index.saturating_sub(1);
+                if let Some(cmd) = self.get_stdin_history().get(self.history_index) {
+                    self.shell_input = self.shell_input.clone().with_value(cmd.clone());
+                }
+            }
+            KeyCode::Down => {
+                let current_idx: usize = self.get_stdin_history().len();
+                self.history_index = current_idx.min(self.history_index + 1);
+                if self.history_index < current_idx {
+                    if let Some(cmd) = self.get_stdin_history().get(self.history_index) {
+                        self.shell_input = self.shell_input.clone().with_value(cmd.clone());
+                    }
+                } else {
+                    self.shell_input.reset();
+                }
             }
             _ => {
                 self.shell_input.handle_event(&Event::Key(key_event));

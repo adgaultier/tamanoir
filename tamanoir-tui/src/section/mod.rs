@@ -1,23 +1,18 @@
 pub mod session;
 pub mod shell;
 
-use std::{
-    cell::Cell,
-    sync::{Arc, RwLock},
-};
-
-use crossterm::event::{Event, KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
-    style::{palette::tailwind, Color, Modifier, Style, Stylize},
+    style::{Color, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders, HighlightSpacing, Padding, Row, Table, TableState},
+    widgets::{Block, BorderType, Borders, Padding},
     Frame,
 };
-use tui_input::{backend::crossterm::EventHandler, Input};
+use shell::ShellCmdHistory;
 
 use crate::{
-    app::{ActivePopup, AppResult, SessionsMap},
+    app::{ActivePopup, AppResult},
     grpc::{RemoteShellServiceClient, SessionServiceClient},
 };
 
@@ -34,7 +29,7 @@ pub struct Section {
 }
 
 impl Section {
-    pub fn new(app_shell: Arc<RwLock<Vec<String>>>) -> Self {
+    pub fn new(app_shell: ShellCmdHistory) -> Self {
         Self {
             focused_section: FocusedSection::Shell,
             shell_section: shell::ShellSection::new(app_shell),

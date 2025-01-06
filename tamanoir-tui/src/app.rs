@@ -10,10 +10,14 @@ use ratatui::{
     Frame,
 };
 
-use crate::{notifications::Notification, section::Section, tamanoir_grpc::SessionResponse};
+use crate::{
+    notifications::Notification,
+    section::{shell::ShellCmdHistory, Section},
+    tamanoir_grpc::SessionResponse,
+};
 
 pub type AppResult<T> = Result<T, Box<dyn error::Error>>;
-pub type SessionsMap = HashMap<String, SessionResponse>;
+pub type SessionsMap = Arc<RwLock<HashMap<String, SessionResponse>>>;
 
 #[derive(Debug)]
 pub struct App {
@@ -21,8 +25,8 @@ pub struct App {
     pub notifications: Vec<Notification>,
     pub is_editing: bool,
     pub focus_section: Section,
-    pub sessions: Arc<RwLock<SessionsMap>>,
-    pub shell_std: Arc<RwLock<Vec<String>>>,
+    pub sessions: SessionsMap,
+    pub shell_std: ShellCmdHistory,
 }
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ActivePopup {
@@ -30,10 +34,7 @@ pub enum ActivePopup {
 }
 
 impl App {
-    pub async fn new(
-        sessions: Arc<RwLock<SessionsMap>>,
-        shell_std: Arc<RwLock<Vec<String>>>,
-    ) -> AppResult<Self> {
+    pub async fn new(sessions: SessionsMap, shell_std: ShellCmdHistory) -> AppResult<Self> {
         Ok(Self {
             running: true,
             notifications: Vec::new(),

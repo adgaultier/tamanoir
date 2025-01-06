@@ -11,6 +11,7 @@ use tamanoir_tui::{
     event::{Event, EventHandler},
     grpc::{sync_grpc_events, RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
     handler::handle_key_events,
+    section::shell::ShellCmdHistory,
     tui::Tui,
 };
 use tokio::sync::mpsc;
@@ -34,8 +35,8 @@ async fn main() -> AppResult<()> {
     tui.init()?;
     let (tx, mut rx) = mpsc::unbounded_channel();
 
-    let sessions: Arc<RwLock<SessionsMap>> = Arc::new(RwLock::new(SessionsMap::default()));
-    let shell_std: Arc<RwLock<Vec<String>>> = Arc::new(RwLock::new(Vec::new()));
+    let sessions: SessionsMap = SessionsMap::default();
+    let shell_std: ShellCmdHistory = Arc::new(RwLock::new(Vec::new()));
 
     let mut app = App::new(sessions.clone(), shell_std.clone()).await?;
 
