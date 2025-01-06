@@ -1,13 +1,19 @@
-use std::{io, net::Ipv4Addr};
+use std::{
+    io,
+    net::Ipv4Addr,
+    sync::{Arc, RwLock},
+};
 
 use clap::Parser;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tamanoir_tui::{
-    app::{App, AppResult},
+    app::{App, AppResult, SessionsMap},
     event::{Event, EventHandler},
+    grpc::{sync_grpc_events, RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
     handler::handle_key_events,
     tui::Tui,
 };
+use tokio::sync::mpsc;
 #[derive(Parser)]
 pub struct Opt {
     #[clap(long, short)]
@@ -20,21 +26,40 @@ pub struct Opt {
 async fn main() -> AppResult<()> {
     let Opt { ip, port } = Opt::parse();
 
-    let mut app = App::new(ip, port).await?;
-
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
     let events = EventHandler::new(1_000);
 
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
+    let (tx, mut rx) = mpsc::unbounded_channel();
+
+    let sessions: Arc<RwLock<SessionsMap>> = Arc::new(RwLock::new(SessionsMap::default()));
+    let shell_std: Arc<RwLock<Vec<String>>> = Arc::new(RwLock::new(Vec::new()));
+
+    let mut app = App::new(sessions.clone(), shell_std.clone()).await?;
+
+    let mut session_client = SessionServiceClient::new(ip, port, tx.clone()).await?;
+    let mut shell_client = RemoteShellServiceClient::new(ip, port, tx.clone()).await?;
+
+    let mut shell_receiver = shell_client.clone();
+    let mut session_receiver = session_client.clone();
+
+    tokio::spawn(async move {
+        tokio::try_join!(
+            session_receiver.listen(),
+            shell_receiver.listen(),
+            sync_grpc_events(&mut rx, sessions.clone(), shell_std.clone())
+        )
+    });
 
     while app.running {
         tui.draw(&mut app)?;
         match tui.events.next().await? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
-                handle_key_events(key_event, &mut app, tui.events.sender.clone()).await?
+                handle_key_events(key_event, &mut app, &mut shell_client, &mut session_client)
+                    .await?
             }
             Event::Notification(notification) => {
                 app.notifications.push(notification);

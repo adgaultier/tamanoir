@@ -12,7 +12,7 @@ pub mod notifications;
 
 pub mod grpc;
 
-pub mod session;
+pub mod section;
 
 pub mod tamanoir_grpc {
     tonic::include_proto!("tamanoir");

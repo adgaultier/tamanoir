@@ -1,38 +1,57 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use tokio::sync::mpsc;
 
 use crate::{
     app::{App, AppResult},
-    event::Event,
-    notifications::{Notification, NotificationLevel},
-    tamanoir_grpc::SessionResponse,
+    grpc::{RemoteShellServiceClient, SessionServiceClient},
 };
 
 pub async fn handle_key_events(
     key_event: KeyEvent,
     app: &mut App,
-    sender: mpsc::UnboundedSender<Event>,
+    shell_client: &mut RemoteShellServiceClient,
+    session_client: &mut SessionServiceClient,
 ) -> AppResult<()> {
+    // if app.is_editing {
+    // match key_event.code {
+    //     KeyCode::Esc | KeyCode::Enter => app.is_editing = false,
+    //     _ => {}
+    // }
     match key_event.code {
-        KeyCode::Esc | KeyCode::Char('q') => {
+        KeyCode::Esc => {
             app.quit();
         }
 
         KeyCode::Char('c') | KeyCode::Char('C') => {
             if key_event.modifiers == KeyModifiers::CONTROL {
                 app.quit();
+            } else {
+                app.focus_section
+                    .handle_keys(key_event, shell_client, session_client)
+                    .await?
             }
         }
-        KeyCode::Char('l') => {
-            dbg!(app.grpc.sessions.keys());
+        _ => {
+            app.focus_section
+                .handle_keys(key_event, shell_client, session_client)
+                .await?
         }
-        KeyCode::Char('p') => {
-            let s = app.grpc.sessions.get("192.168.1.180").ok_or("Not found")?;
-            let keys = s.parse_keycodes(crate::session::Layout::Azerty)?;
-            dbg!(SessionResponse::format_keys(keys));
-        }
-        _ => {}
     }
+
+    //}
+
+    //     KeyCode::Char('l') => {
+    //         dbg!(app.grpc.sessions.keys());
+    //     }
+    //     KeyCode::Char('p') => {
+    //         let s = app.grpc.sessions.get("192.168.1.180").ok_or("Not found")?;
+    //         let keys = s.parse_keycodes(crate::section::session::Layout::Azerty)?;
+    //         dbg!(SessionResponse::format_keys(keys));
+    //     }
+    //     KeyCode::Char('t') => {
+    //         dbg!(app.grpc.sessions.keys());
+    //     }
+    //     _ => {}
+    // }
 
     Ok(())
 }

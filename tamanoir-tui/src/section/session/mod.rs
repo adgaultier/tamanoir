@@ -1,6 +1,6 @@
 pub mod utils;
 use core::fmt;
-use std::{collections::HashMap, net::Ipv4Addr, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
 use anyhow::Error;
 use serde::Deserialize;
