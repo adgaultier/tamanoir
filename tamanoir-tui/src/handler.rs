@@ -11,11 +11,6 @@ pub async fn handle_key_events(
     shell_client: &mut RemoteShellServiceClient,
     session_client: &mut SessionServiceClient,
 ) -> AppResult<()> {
-    // if app.is_editing {
-    // match key_event.code {
-    //     KeyCode::Esc | KeyCode::Enter => app.is_editing = false,
-    //     _ => {}
-    // }
     match key_event.code {
         KeyCode::Esc => {
             app.quit();

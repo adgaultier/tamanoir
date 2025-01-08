@@ -25,8 +25,6 @@ pub struct App {
     pub notifications: Vec<Notification>,
     pub is_editing: bool,
     pub sections: Sections,
-    pub sessions: SessionsMap,
-    pub shell_std: ShellCmdHistory,
 }
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ActivePopup {
@@ -40,8 +38,6 @@ impl App {
             notifications: Vec::new(),
             is_editing: false,
             sections: Sections::new(shell_std.clone(), sessions.clone()),
-            sessions,
-            shell_std,
         })
     }
 

@@ -14,7 +14,7 @@ use tamanoir_tui::{
     section::shell::ShellCmdHistory,
     tui::Tui,
 };
-use tokio::sync::mpsc;
+
 #[derive(Parser)]
 pub struct Opt {
     #[clap(long, short)]
@@ -41,6 +41,12 @@ async fn main() -> AppResult<()> {
 
     let mut session_client = SessionServiceClient::new(ip, port).await?;
     let mut shell_client = RemoteShellServiceClient::new(ip, port).await?;
+
+    //init sessions (fetch  current sessions)
+    app.sections
+        .sessions_section
+        .init(&mut session_client)
+        .await?;
 
     let mut shell_receiver = shell_client.clone();
     let mut session_receiver = session_client.clone();

@@ -4,7 +4,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio_stream::StreamExt;
 use tonic::{transport::Channel, Request};
 
@@ -20,11 +19,6 @@ use crate::{
         SessionResponse, SetSessionRceRequest, ShellStd,
     },
 };
-// #[derive(Debug, Clone)]
-// pub enum GrpcEvent {
-//     ShellEvent(ShellCmd),
-//     SessionEvent(SessionResponse),
-// }
 
 #[derive(Debug, Clone)]
 pub struct SessionServiceClient {
@@ -43,16 +37,17 @@ pub struct RceServiceClient {
 
 impl SessionServiceClient {
     pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
-        let mut client = SessionClient::connect(format!("http://{}:{}", ip, port)).await?;
+        let client = SessionClient::connect(format!("http://{}:{}", ip, port)).await?;
         init_keymaps();
-        let request = tonic::Request::new(Empty {});
-
-        let _sessions = client.list_sessions(request).await?.into_inner().sessions;
-        // for s in sessions.into_iter() {
-        //     tx.send(GrpcEvent::SessionEvent(s))?;
-        // }
-
         Ok(Self { client })
+    }
+    pub async fn list_sessions(&mut self) -> AppResult<Vec<SessionResponse>> {
+        Ok(self
+            .client
+            .list_sessions(tonic::Request::new(Empty {}))
+            .await?
+            .into_inner()
+            .sessions)
     }
 }
 impl RemoteShellServiceClient {

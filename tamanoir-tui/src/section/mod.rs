@@ -141,7 +141,7 @@ impl Sections {
 
         match self.focused_section {
             FocusedSection::Sessions => {
-                unimplemented!()
+                self.sessions_section.render(frame, section_block);
             }
             FocusedSection::Shell => {
                 self.shell_section.render(frame, section_block);
@@ -156,7 +156,7 @@ impl Sections {
         &mut self,
         key_event: KeyEvent,
         shell_client: &mut RemoteShellServiceClient,
-        _session_client: &mut SessionServiceClient,
+        session_client: &mut SessionServiceClient,
     ) -> AppResult<()> {
         match key_event.code {
             KeyCode::Tab => match self.focused_section {
@@ -172,12 +172,11 @@ impl Sections {
             },
 
             _ => match self.focused_section {
-                FocusedSection::Sessions => match key_event.code {
-                    KeyCode::Char('l') => {
-                        unimplemented!();
-                    }
-                    _ => {}
-                },
+                FocusedSection::Sessions => {
+                    self.sessions_section
+                        .handle_keys(key_event, session_client)
+                        .await?;
+                }
                 FocusedSection::Shell => {
                     self.shell_section
                         .handle_keys(key_event, shell_client)
