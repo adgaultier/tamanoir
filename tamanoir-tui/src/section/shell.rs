@@ -233,7 +233,12 @@ impl ShellSection {
         }
         match key_event.code {
             KeyCode::Enter => {
-                shell_client.send_cmd(self.shell_input.to_string()).await?;
+                let cmd = self.shell_input.to_string();
+                shell_client.send_cmd(cmd.clone()).await?;
+                self.items.write().unwrap().push(ShellCmd {
+                    inner: cmd,
+                    std_type: ShellStdType::StdIn,
+                });
                 self.shell_input.reset();
                 self.history_index = self.get_stdin_history().len();
                 self.unselect();

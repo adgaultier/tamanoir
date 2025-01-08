@@ -9,7 +9,7 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use tamanoir_tui::{
     app::{App, AppResult, SessionsMap},
     event::{Event, EventHandler},
-    grpc::{sync_grpc_events, RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
+    grpc::{RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
     handler::handle_key_events,
     section::shell::ShellCmdHistory,
     tui::Tui,
@@ -33,24 +33,22 @@ async fn main() -> AppResult<()> {
 
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
-    let (tx, mut rx) = mpsc::unbounded_channel();
 
     let sessions: SessionsMap = SessionsMap::default();
     let shell_std: ShellCmdHistory = Arc::new(RwLock::new(Vec::new()));
 
     let mut app = App::new(sessions.clone(), shell_std.clone()).await?;
 
-    let mut session_client = SessionServiceClient::new(ip, port, tx.clone()).await?;
-    let mut shell_client = RemoteShellServiceClient::new(ip, port, tx.clone()).await?;
+    let mut session_client = SessionServiceClient::new(ip, port).await?;
+    let mut shell_client = RemoteShellServiceClient::new(ip, port).await?;
 
     let mut shell_receiver = shell_client.clone();
     let mut session_receiver = session_client.clone();
 
     tokio::spawn(async move {
         tokio::try_join!(
-            session_receiver.listen(),
-            shell_receiver.listen(),
-            sync_grpc_events(&mut rx, sessions.clone(), shell_std.clone())
+            session_receiver.listen(sessions.clone()),
+            shell_receiver.listen(shell_std.clone()),
         )
     });
 

@@ -25,13 +25,13 @@ pub async fn handle_key_events(
             if key_event.modifiers == KeyModifiers::CONTROL {
                 app.quit();
             } else {
-                app.focus_section
+                app.sections
                     .handle_keys(key_event, shell_client, session_client)
                     .await?
             }
         }
         _ => {
-            app.focus_section
+            app.sections
                 .handle_keys(key_event, shell_client, session_client)
                 .await?
         }

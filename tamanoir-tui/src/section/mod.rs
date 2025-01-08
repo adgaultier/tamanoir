@@ -12,7 +12,7 @@ use ratatui::{
 use shell::ShellCmdHistory;
 
 use crate::{
-    app::{ActivePopup, AppResult},
+    app::{ActivePopup, AppResult, SessionsMap},
     grpc::{RemoteShellServiceClient, SessionServiceClient},
 };
 
@@ -23,16 +23,18 @@ pub enum FocusedSection {
     Rce,
 }
 #[derive(Debug)]
-pub struct Section {
+pub struct Sections {
     pub focused_section: FocusedSection,
     pub shell_section: shell::ShellSection,
+    pub sessions_section: session::SessionsSection,
 }
 
-impl Section {
-    pub fn new(app_shell: ShellCmdHistory) -> Self {
+impl Sections {
+    pub fn new(app_shell: ShellCmdHistory, sessions: SessionsMap) -> Self {
         Self {
             focused_section: FocusedSection::Shell,
             shell_section: shell::ShellSection::new(app_shell),
+            sessions_section: session::SessionsSection::new(sessions),
         }
     }
     fn title_span(&self, header_section: FocusedSection) -> Span {

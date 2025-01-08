@@ -12,7 +12,7 @@ use ratatui::{
 
 use crate::{
     notifications::Notification,
-    section::{shell::ShellCmdHistory, Section},
+    section::{shell::ShellCmdHistory, Sections},
     tamanoir_grpc::SessionResponse,
 };
 
@@ -24,7 +24,7 @@ pub struct App {
     pub running: bool,
     pub notifications: Vec<Notification>,
     pub is_editing: bool,
-    pub focus_section: Section,
+    pub sections: Sections,
     pub sessions: SessionsMap,
     pub shell_std: ShellCmdHistory,
 }
@@ -39,7 +39,7 @@ impl App {
             running: true,
             notifications: Vec::new(),
             is_editing: false,
-            focus_section: Section::new(shell_std.clone()),
+            sections: Sections::new(shell_std.clone(), sessions.clone()),
             sessions,
             shell_std,
         })
@@ -57,7 +57,7 @@ impl App {
                 .split(frame.area());
             (chunks[0], chunks[2])
         };
-        self.focus_section.render(frame, section_block, None);
+        self.sections.render(frame, section_block, None);
     }
 
     pub fn quit(&mut self) {
