@@ -4,7 +4,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Margin, Rect},
     style::{palette::tailwind, Color, Modifier, Style, Stylize},
-    text::Text,
+    text::{Span, Text},
     widgets::{
         Block, BorderType, HighlightSpacing, Paragraph, Row, Scrollbar, ScrollbarOrientation,
         ScrollbarState, Table, TableState,
@@ -33,7 +33,6 @@ struct TableColors {
     selected_row_style_fg: Color,
     normal_row_color: Color,
     alt_row_color: Color,
-    footer_border_color: Color,
 }
 impl TableColors {
     const fn new(color: &tailwind::Palette) -> Self {
@@ -43,7 +42,6 @@ impl TableColors {
             selected_row_style_fg: color.c400,
             normal_row_color: tailwind::SLATE.c950,
             alt_row_color: tailwind::SLATE.c900,
-            footer_border_color: color.c400,
         }
     }
 }
@@ -142,13 +140,13 @@ impl ShellSection {
             .map(|cmd| cmd.inner.clone())
             .collect::<Vec<String>>()
     }
-    pub fn render(&mut self, frame: &mut Frame, block: Rect) {
+    pub fn render(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
         self.set_colors();
 
         let selected_row_style = Style::default()
             .add_modifier(Modifier::REVERSED)
             .fg(self.colors.selected_row_style_fg);
-        let bar = " █ ";
+
         let (shell_history_block, input_block) = {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -175,17 +173,19 @@ impl ShellSection {
                 .style(Style::new().fg(self.colors.row_fg).bg(color))
                 .height(length as u16)
         });
-
+        let highlight_color = if is_focused {
+            Color::Yellow
+        } else {
+            Color::Blue
+        };
         let table: Table<'_> = Table::new(rows, vec![Constraint::Percentage(100)])
             .row_highlight_style(selected_row_style)
-            .highlight_symbol(Text::from(vec![
-                "".into(),
-                bar.into(),
-                bar.into(),
-                "".into(),
-            ]))
             .bg(self.colors.buffer_bg)
-            .highlight_spacing(HighlightSpacing::Never);
+            .highlight_spacing(HighlightSpacing::Never)
+            .block(Block::default().title(Span::styled(
+                "Remote Shell",
+                Style::default().fg(highlight_color).bold(),
+            )));
 
         frame.render_stateful_widget(table, shell_history_block, &mut self.state);
 
@@ -210,7 +210,7 @@ impl ShellSection {
             .block(
                 Block::bordered()
                     .border_type(BorderType::Double)
-                    .border_style(Style::new().fg(self.colors.footer_border_color)),
+                    .border_style(Style::new().fg(highlight_color)),
             );
 
         frame.render_widget(cmd_input, input_block);

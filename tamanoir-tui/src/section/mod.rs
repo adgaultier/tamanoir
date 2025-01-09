@@ -1,127 +1,89 @@
+pub mod keylogger;
+//pub mod rce;
 pub mod session;
 pub mod shell;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
+    layout::{Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders, Padding},
+    widgets::{Block, BorderType, Paragraph},
     Frame,
 };
 use shell::ShellCmdHistory;
 
 use crate::{
-    app::{ActivePopup, AppResult, SessionsMap},
+    app::{AppResult, SessionsMap},
     grpc::{RemoteShellServiceClient, SessionServiceClient},
 };
 
 #[derive(Debug, PartialEq)]
 pub enum FocusedSection {
     Sessions,
+    KeyLogger,
     Shell,
     Rce,
 }
+
+const MAX_HORIZONTAL_SPLIT_SIZE: u16 = 20u16;
 #[derive(Debug)]
 pub struct Sections {
     pub focused_section: FocusedSection,
     pub shell_section: shell::ShellSection,
-    pub sessions_section: session::SessionsSection,
+    pub keylogger_section: keylogger::KeyLoggerSection,
+    pub session_section: session::SessionSection,
+    pub shell_percentage_split: Option<u16>,
 }
 
 impl Sections {
     pub fn new(app_shell: ShellCmdHistory, sessions: SessionsMap) -> Self {
         Self {
-            focused_section: FocusedSection::Shell,
+            focused_section: FocusedSection::Sessions,
             shell_section: shell::ShellSection::new(app_shell),
-            sessions_section: session::SessionsSection::new(sessions),
-        }
-    }
-    fn title_span(&self, header_section: FocusedSection) -> Span {
-        let is_focused = self.focused_section == header_section;
-        match header_section {
-            FocusedSection::Sessions => {
-                if is_focused {
-                    Span::styled(
-                        "  Sessions 󰏖   ",
-                        Style::default().bg(Color::Green).fg(Color::White).bold(),
-                    )
-                } else {
-                    Span::from("  Sessions 󰏖   ").fg(Color::DarkGray)
-                }
-            }
-            FocusedSection::Shell => {
-                if is_focused {
-                    Span::styled(
-                        "  Shell    ",
-                        Style::default().bg(Color::Green).fg(Color::White).bold(),
-                    )
-                } else {
-                    Span::from("  Shell    ").fg(Color::DarkGray)
-                }
-            }
-            FocusedSection::Rce => {
-                if is_focused {
-                    Span::styled(
-                        "  Rce 󱕍   ",
-                        Style::default().bg(Color::Green).fg(Color::White).bold(),
-                    )
-                } else {
-                    Span::from("  Rce 󱕍   ").fg(Color::DarkGray)
-                }
-            }
+            keylogger_section: keylogger::KeyLoggerSection::new(),
+            session_section: session::SessionSection::new(sessions),
+            shell_percentage_split: None,
         }
     }
 
-    fn render_footer_help(
-        &self,
-        frame: &mut Frame,
-        block: Rect,
-        active_popup: Option<&ActivePopup>,
-    ) {
+    fn render_footer_help(&self, frame: &mut Frame, block: Rect) {
         let message = {
-            match active_popup {
-                _ => Line::from(vec![
-                    Span::from("f").bold(),
-                    Span::from(" Filters").bold(),
-                    Span::from(" | ").bold(),
-                    Span::from(" ").bold(),
-                    Span::from(" Nav").bold(),
-                ]),
+            let mut base_message = vec![Span::from("󰘶 +  ").bold(), Span::from(" Nav")];
+            if self.shell_percentage_split.is_some() {
+                base_message.extend([
+                    Span::from(" | "),
+                    Span::from("Ctrl + ").bold(),
+                    Span::from(" Resize shell"),
+                ])
             }
+            match self.focused_section {
+                FocusedSection::Sessions => {
+                    base_message.extend([
+                        Span::from(" | "),
+                        Span::from("s:").bold(),
+                        Span::from(" (De)Activate Shell"),
+                    ]);
+                }
+                _ => {}
+            };
+            base_message
         };
 
-        let help = Text::from(vec![Line::from(""), message]).blue().centered();
+        let help = Text::from(vec![Line::from(message)]).blue().centered();
+
         frame.render_widget(
-            help,
-            block.inner(Margin {
-                horizontal: 1,
-                vertical: 0,
-            }),
-        );
-    }
-    pub fn render_header(&mut self, frame: &mut Frame, block: Rect) {
-        frame.render_widget(
-            Block::default()
-                .title({
-                    Line::from(vec![
-                        self.title_span(FocusedSection::Sessions),
-                        self.title_span(FocusedSection::Shell),
-                        self.title_span(FocusedSection::Rce),
-                    ])
-                })
-                .title_alignment(Alignment::Left)
-                .padding(Padding::top(1))
-                .borders(Borders::ALL)
-                .style(Style::default())
-                .border_type(BorderType::default())
-                .border_style(Style::default().green()),
+            Paragraph::new(help).centered().block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::new().fg(Color::Blue)),
+            ),
             block,
         );
     }
 
-    pub fn render(&mut self, frame: &mut Frame, block: Rect, active_popup: Option<&ActivePopup>) {
-        let (section_block, help_block) = {
+    pub fn render(&mut self, frame: &mut Frame, block: Rect) {
+        let (main_block, help_block) = {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Fill(1), Constraint::Length(3)])
@@ -130,25 +92,60 @@ impl Sections {
 
             (chunks[0], chunks[1])
         };
+        let (sessions_block, main_block) = {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Length(15 + 3), Constraint::Fill(1)])
+                .flex(ratatui::layout::Flex::SpaceBetween)
+                .split(main_block);
+            (chunks[0], chunks[1])
+        };
+        self.session_section.render(
+            frame,
+            sessions_block,
+            self.focused_section == FocusedSection::Sessions,
+        );
 
-        self.render_header(frame, section_block);
-        self.render_footer_help(frame, help_block, active_popup);
-        let section_block = Layout::default()
-            .direction(Direction::Horizontal)
-            .margin(2)
-            .constraints([Constraint::Fill(1)])
-            .split(section_block)[0];
+        self.render_footer_help(frame, help_block);
 
-        match self.focused_section {
-            FocusedSection::Sessions => {
-                self.sessions_section.render(frame, section_block);
+        let (keylogger_block, shell_block) = {
+            match self.shell_percentage_split {
+                Some(k) => {
+                    let chunks = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints(Constraint::from_fills([
+                            MAX_HORIZONTAL_SPLIT_SIZE.saturating_sub(k),
+                            k,
+                        ]))
+                        .flex(ratatui::layout::Flex::SpaceBetween)
+                        .split(main_block);
+                    (chunks[0], Some(chunks[1]))
+                }
+                None => {
+                    let chunks = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints([Constraint::Fill(1)])
+                        .flex(ratatui::layout::Flex::SpaceBetween)
+                        .split(main_block);
+                    (chunks[0], None)
+                }
             }
-            FocusedSection::Shell => {
-                self.shell_section.render(frame, section_block);
-            }
-            FocusedSection::Rce => {
-                unimplemented!()
-            }
+        };
+        self.keylogger_section.render(
+            frame,
+            keylogger_block,
+            &mut self.session_section.selected_session,
+            self.focused_section == FocusedSection::KeyLogger,
+        );
+        if let Some(shell_block) = shell_block {
+            self.shell_section.render(
+                frame,
+                shell_block.inner(Margin {
+                    horizontal: 1,
+                    vertical: 0,
+                }),
+                self.focused_section == FocusedSection::Shell,
+            );
         }
     }
 
@@ -156,27 +153,68 @@ impl Sections {
         &mut self,
         key_event: KeyEvent,
         shell_client: &mut RemoteShellServiceClient,
-        session_client: &mut SessionServiceClient,
+        _session_client: &mut SessionServiceClient,
     ) -> AppResult<()> {
-        match key_event.code {
-            KeyCode::Tab => match self.focused_section {
-                FocusedSection::Sessions => self.focused_section = FocusedSection::Shell,
-                FocusedSection::Shell => self.focused_section = FocusedSection::Rce,
-                FocusedSection::Rce => self.focused_section = FocusedSection::Sessions,
-            },
-
-            KeyCode::BackTab => match self.focused_section {
-                FocusedSection::Sessions => self.focused_section = FocusedSection::Rce,
-                FocusedSection::Shell => self.focused_section = FocusedSection::Sessions,
-                FocusedSection::Rce => self.focused_section = FocusedSection::Shell,
-            },
-
-            _ => match self.focused_section {
-                FocusedSection::Sessions => {
-                    self.sessions_section
-                        .handle_keys(key_event, session_client)
-                        .await?;
+        if key_event.modifiers.contains(KeyModifiers::CONTROL) {
+            if let Some(k) = self.shell_percentage_split {
+                match key_event.code {
+                    KeyCode::Char('j') | KeyCode::Down => {
+                        self.shell_percentage_split = Some(k.saturating_sub(1));
+                    }
+                    KeyCode::Char('k') | KeyCode::Up => {
+                        Some(
+                            self.shell_percentage_split =
+                                Some((k + 1).min(MAX_HORIZONTAL_SPLIT_SIZE)),
+                        );
+                    }
+                    _ => {}
                 }
+            }
+        } else if key_event.modifiers.contains(KeyModifiers::SHIFT) {
+            match key_event.code {
+                KeyCode::Char('j') | KeyCode::Down => match self.focused_section {
+                    FocusedSection::KeyLogger => {
+                        if let Some(_) = self.shell_percentage_split {
+                            self.focused_section = FocusedSection::Shell
+                        }
+                    }
+                    _ => {}
+                },
+                KeyCode::Char('k') | KeyCode::Up => match self.focused_section {
+                    FocusedSection::Shell => {
+                        if let Some(_) = self.shell_percentage_split {
+                            self.focused_section = FocusedSection::KeyLogger
+                        }
+                    }
+                    _ => {}
+                },
+                KeyCode::Char('h') | KeyCode::Left => match self.focused_section {
+                    FocusedSection::KeyLogger | FocusedSection::Shell => {
+                        self.focused_section = FocusedSection::Sessions
+                    }
+                    _ => {}
+                },
+                KeyCode::Char('l') | KeyCode::Right => match self.focused_section {
+                    FocusedSection::Sessions => self.focused_section = FocusedSection::KeyLogger,
+                    _ => {}
+                },
+                _ => {}
+            }
+        } else {
+            match self.focused_section {
+                FocusedSection::Sessions => match key_event.code {
+                    KeyCode::Enter => {}
+                    KeyCode::Char('j') | KeyCode::Down => self.session_section.next_row(),
+                    KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_row(),
+                    KeyCode::Char('s') => {
+                        self.shell_percentage_split = if let Some(_) = self.shell_percentage_split {
+                            None
+                        } else {
+                            Some(MAX_HORIZONTAL_SPLIT_SIZE.div_euclid(2))
+                        };
+                    }
+                    _ => {}
+                },
                 FocusedSection::Shell => {
                     self.shell_section
                         .handle_keys(key_event, shell_client)
@@ -184,8 +222,9 @@ impl Sections {
                 }
 
                 _ => {}
-            },
+            }
         }
+
         Ok(())
     }
 }

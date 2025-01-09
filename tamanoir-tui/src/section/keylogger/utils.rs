@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::OnceLock};
 
-use ratatui::style::{palette::tailwind, Color};
 pub static KEYMAPS: OnceLock<HashMap<u8, KeyMap>> = OnceLock::new();
 const AZERTY: &str = include_str!("../../../../assets/layouts/azerty.yml");
 const QWERTY: &str = include_str!("../../../../assets/layouts/qwerty.yml");
@@ -26,33 +25,6 @@ use serde::Deserialize;
 
 use crate::{app::AppResult, tamanoir_grpc::SessionResponse};
 const COMMON_REPEATED_KEYS: [&str; 4] = [" 󱊷 ", " 󰌑 ", " 󰁮 ", "  "];
-pub const PALETTES: [tailwind::Palette; 4] = [
-    tailwind::BLUE,
-    tailwind::EMERALD,
-    tailwind::INDIGO,
-    tailwind::RED,
-];
-#[derive(Debug)]
-pub struct TableColors {
-    pub buffer_bg: Color,
-    pub row_fg: Color,
-    pub selected_row_style_fg: Color,
-    pub normal_row_color: Color,
-    pub alt_row_color: Color,
-    pub footer_border_color: Color,
-}
-impl TableColors {
-    pub const fn new(color: &tailwind::Palette) -> Self {
-        Self {
-            buffer_bg: tailwind::SLATE.c950,
-            row_fg: tailwind::SLATE.c200,
-            selected_row_style_fg: color.c400,
-            normal_row_color: tailwind::SLATE.c950,
-            alt_row_color: tailwind::SLATE.c900,
-            footer_border_color: color.c400,
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum TargetArch {
@@ -103,6 +75,10 @@ impl FromStr for TargetArch {
         }
     }
 }
+impl TargetArch {
+    pub const ALL: [Self; 2] = [Self::X86_64, Self::Aarch64];
+}
+#[derive(Debug, Clone)]
 pub enum Layout {
     Qwerty = 0,
     Azerty = 1,
@@ -116,9 +92,6 @@ impl From<u8> for Layout {
             _ => Self::Unknown,
         }
     }
-}
-impl TargetArch {
-    pub const ALL: [Self; 2] = [Self::X86_64, Self::Aarch64];
 }
 
 #[derive(Deserialize, Debug)]

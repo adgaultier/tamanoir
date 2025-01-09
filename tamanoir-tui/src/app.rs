@@ -6,10 +6,7 @@ use std::{
 };
 
 use anyhow::Result;
-use ratatui::{
-    layout::{Constraint, Direction, Layout},
-    Frame,
-};
+use ratatui::Frame;
 
 use crate::{
     grpc::{RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
@@ -31,11 +28,6 @@ pub struct App {
     pub session_client: SessionServiceClient,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum ActivePopup {
-    Help,
-}
-
 impl App {
     pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
         let sessions: SessionsMap = SessionsMap::default();
@@ -49,7 +41,7 @@ impl App {
         let mut session_receiver = session_client.clone();
 
         let mut sections = Sections::new(shell_std.clone(), sessions.clone());
-        sections.sessions_section.init(&mut session_client).await?;
+        sections.session_section.init(&mut session_client).await?;
 
         tokio::spawn(async move {
             tokio::try_join!(
@@ -69,18 +61,7 @@ impl App {
     }
 
     pub fn render(&mut self, frame: &mut Frame) {
-        let (_settings_block, section_block) = {
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([
-                    Constraint::Length(6),
-                    Constraint::Length(1),
-                    Constraint::Fill(1),
-                ])
-                .split(frame.area());
-            (chunks[0], chunks[2])
-        };
-        self.sections.render(frame, section_block, None);
+        self.sections.render(frame, frame.area());
     }
 
     pub fn quit(&mut self) {
