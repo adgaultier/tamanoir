@@ -1,14 +1,13 @@
 pub mod utils;
-use std::collections::HashMap;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Margin, Rect},
-    style::{palette::tailwind, Color, Modifier, Style, Stylize},
+    layout::{Constraint, Margin, Rect},
+    style::{Modifier, Style, Stylize},
     text::Text,
     widgets::{
-        Block, BorderType, Cell, HighlightSpacing, Paragraph, Row, Scrollbar, ScrollbarOrientation,
-        ScrollbarState, Table, TableState,
+        Cell, HighlightSpacing, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, Table,
+        TableState,
     },
     Frame,
 };
@@ -153,7 +152,7 @@ impl SessionsSection {
     pub async fn handle_keys(
         &mut self,
         key_event: KeyEvent,
-        sessions_client: &mut SessionServiceClient,
+        _sessions_client: &mut SessionServiceClient,
     ) -> AppResult<()> {
         match key_event.code {
             KeyCode::Enter => {}

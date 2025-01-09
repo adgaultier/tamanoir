@@ -169,7 +169,7 @@ impl ShellSection {
             let length = data.inner.chars().filter(|&c| c == '\n').count() + 1;
             let text = match data.std_type {
                 ShellStdType::StdIn => format!("{}", data.inner),
-                ShellStdType::StdOut => format!("{}", data.inner),
+                ShellStdType::StdOut => data.inner.to_string(),
             };
             Row::new([text])
                 .style(Style::new().fg(self.colors.row_fg).bg(color))

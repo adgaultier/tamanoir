@@ -1,16 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::{
-    app::{App, AppResult},
-    grpc::{RemoteShellServiceClient, SessionServiceClient},
-};
+use crate::app::{App, AppResult};
 
-pub async fn handle_key_events(
-    key_event: KeyEvent,
-    app: &mut App,
-    shell_client: &mut RemoteShellServiceClient,
-    session_client: &mut SessionServiceClient,
-) -> AppResult<()> {
+pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
     match key_event.code {
         KeyCode::Esc => {
             app.quit();
@@ -21,32 +13,16 @@ pub async fn handle_key_events(
                 app.quit();
             } else {
                 app.sections
-                    .handle_keys(key_event, shell_client, session_client)
+                    .handle_keys(key_event, &mut app.shell_client, &mut app.session_client)
                     .await?
             }
         }
         _ => {
             app.sections
-                .handle_keys(key_event, shell_client, session_client)
+                .handle_keys(key_event, &mut app.shell_client, &mut app.session_client)
                 .await?
         }
     }
-
-    //}
-
-    //     KeyCode::Char('l') => {
-    //         dbg!(app.grpc.sessions.keys());
-    //     }
-    //     KeyCode::Char('p') => {
-    //         let s = app.grpc.sessions.get("192.168.1.180").ok_or("Not found")?;
-    //         let keys = s.parse_keycodes(crate::section::session::Layout::Azerty)?;
-    //         dbg!(SessionResponse::format_keys(keys));
-    //     }
-    //     KeyCode::Char('t') => {
-    //         dbg!(app.grpc.sessions.keys());
-    //     }
-    //     _ => {}
-    // }
 
     Ok(())
 }
