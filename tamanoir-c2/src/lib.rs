@@ -110,6 +110,7 @@ pub struct Session {
     pub rce_payload: Option<SessionRcePayload>,
     pub first_packet: DateTime<Utc>,
     pub latest_packet: DateTime<Utc>,
+    pub n_packets: usize,
 }
 impl Session {
     pub fn new(sock_addr: SocketAddr) -> Option<Self> {
@@ -121,6 +122,7 @@ impl Session {
                 rce_payload: None,
                 first_packet: now_utc,
                 latest_packet: now_utc,
+                n_packets: 1,
             }),
             _ => None,
         }

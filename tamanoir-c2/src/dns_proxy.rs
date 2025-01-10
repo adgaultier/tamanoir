@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::Error;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use log::{debug, error, info};
 use tamanoir_common::ContinuationByte;
 use tokio::{net::UdpSocket, sync::Mutex};
@@ -157,6 +157,7 @@ impl DnsProxy {
             } else {
                 let current_session = current_sessions.get_mut(&s.ip).unwrap();
                 current_session.latest_packet = Utc::now();
+                current_session.n_packets += 1;
             }
         }
         debug!("{:?} bytes received from {:?}", len, addr);
