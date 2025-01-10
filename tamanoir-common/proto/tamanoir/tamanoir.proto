@@ -20,6 +20,8 @@ message SessionResponse {
   string ip =1;
   repeated uint32 key_codes=2; 
   SessionRcePayload rce_payload=3;
+  string first_packet =4;
+  string latest_packet=5;
 }
 message SetSessionRceRequest {
   string ip=1;

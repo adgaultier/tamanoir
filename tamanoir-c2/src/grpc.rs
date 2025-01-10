@@ -62,6 +62,8 @@ impl Session for SessionsStore {
                 ip: s.ip.to_string(),
                 key_codes: s.key_codes.iter().map(|byte| *byte as u32).collect(),
                 rce_payload: rce_payload,
+                first_packet: format!("{}", s.first_packet),
+                latest_packet: format!("{}", s.latest_packet),
             })
         }
 
@@ -89,7 +91,9 @@ impl Session for SessionsStore {
                 yield SessionResponse {
                     ip: session.ip.to_string(),
                     key_codes: session.key_codes.iter().map(|byte| *byte as u32).collect(),
-                    rce_payload: rce_payload
+                    rce_payload: rce_payload,
+                    first_packet: format!("{}", session.first_packet),
+                    latest_packet: format!("{}", session.latest_packet),
                 };
 
 

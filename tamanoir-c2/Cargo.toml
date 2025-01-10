@@ -24,6 +24,7 @@ tamanoir-common = { path = "../tamanoir-common" }
 tonic = "0.12"
 prost = "0.13"
 tonic-types = "0.12"
+chrono = "0.4"
 
 [build-dependencies]
 tonic-build = "0.12"
