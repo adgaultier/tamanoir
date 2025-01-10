@@ -26,7 +26,6 @@ pub enum FocusedSection {
     Rce,
 }
 
-const MAX_HORIZONTAL_SPLIT_SIZE: u16 = 20u16;
 #[derive(Debug)]
 pub struct Sections {
     pub focused_section: FocusedSection,
@@ -82,24 +81,25 @@ impl Sections {
         );
     }
 
-    pub fn render(&mut self, frame: &mut Frame, block: Rect) {
+    pub fn render(&mut self, frame: &mut Frame) {
         let (main_block, help_block) = {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Fill(1), Constraint::Length(3)])
                 .flex(ratatui::layout::Flex::SpaceBetween)
-                .split(block);
+                .split(frame.area());
 
             (chunks[0], chunks[1])
         };
         let (sessions_block, main_block) = {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Length(15 + 3), Constraint::Fill(1)])
+                .constraints([Constraint::Length(18), Constraint::Fill(1)])
                 .flex(ratatui::layout::Flex::SpaceBetween)
                 .split(main_block);
             (chunks[0], chunks[1])
         };
+
         self.session_section.render(
             frame,
             sessions_block,
@@ -113,10 +113,7 @@ impl Sections {
                 Some(k) => {
                     let chunks = Layout::default()
                         .direction(Direction::Vertical)
-                        .constraints(Constraint::from_fills([
-                            MAX_HORIZONTAL_SPLIT_SIZE.saturating_sub(k),
-                            k,
-                        ]))
+                        .constraints([Constraint::Fill(1), Constraint::Percentage(k)])
                         .flex(ratatui::layout::Flex::SpaceBetween)
                         .split(main_block);
                     (chunks[0], Some(chunks[1]))
@@ -159,13 +156,12 @@ impl Sections {
             if let Some(k) = self.shell_percentage_split {
                 match key_event.code {
                     KeyCode::Char('j') | KeyCode::Down => {
-                        self.shell_percentage_split = Some(k.saturating_sub(1));
+                        self.shell_percentage_split = Some(k.saturating_sub(5).max(20));
+                        // decrease by 5%
                     }
                     KeyCode::Char('k') | KeyCode::Up => {
-                        Some(
-                            self.shell_percentage_split =
-                                Some((k + 1).min(MAX_HORIZONTAL_SPLIT_SIZE)),
-                        );
+                        Some(self.shell_percentage_split = Some((k + 5).min(90)));
+                        // increase by 5%
                     }
                     _ => {}
                 }
@@ -210,7 +206,7 @@ impl Sections {
                         self.shell_percentage_split = if let Some(_) = self.shell_percentage_split {
                             None
                         } else {
-                            Some(MAX_HORIZONTAL_SPLIT_SIZE.div_euclid(2))
+                            Some(20)
                         };
                     }
                     _ => {}

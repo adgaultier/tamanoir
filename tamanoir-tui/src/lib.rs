@@ -8,8 +8,6 @@ pub mod tui;
 
 pub mod handler;
 
-pub mod notifications;
-
 pub mod grpc;
 
 pub mod section;

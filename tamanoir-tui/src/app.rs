@@ -6,11 +6,9 @@ use std::{
 };
 
 use anyhow::Result;
-use ratatui::Frame;
 
 use crate::{
     grpc::{RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
-    notifications::Notification,
     section::{shell::ShellCmdHistory, Sections},
     tamanoir_grpc::SessionResponse,
 };
@@ -21,7 +19,6 @@ pub type SessionsMap = Arc<RwLock<HashMap<String, SessionResponse>>>;
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
-    pub notifications: Vec<Notification>,
     pub is_editing: bool,
     pub sections: Sections,
     pub shell_client: RemoteShellServiceClient,
@@ -52,7 +49,6 @@ impl App {
 
         Ok(Self {
             running: true,
-            notifications: Vec::new(),
             is_editing: false,
             sections,
             shell_client,
@@ -60,16 +56,7 @@ impl App {
         })
     }
 
-    pub fn render(&mut self, frame: &mut Frame) {
-        self.sections.render(frame, frame.area());
-    }
-
     pub fn quit(&mut self) {
         self.running = false;
-    }
-
-    pub fn tick(&mut self) {
-        self.notifications.retain(|n| n.ttl > 0);
-        self.notifications.iter_mut().for_each(|n| n.ttl -= 1);
     }
 }
