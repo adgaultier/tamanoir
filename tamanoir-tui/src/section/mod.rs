@@ -48,7 +48,13 @@ impl Sections {
 
     fn render_footer_help(&self, frame: &mut Frame, block: Rect) {
         let message = {
-            let mut base_message = vec![Span::from(" ").bold(), Span::from(" Nav")];
+            let mut base_message = vec![
+                Span::from(" ").bold(),
+                Span::from(" Nav"),
+                Span::from(" | "),
+                Span::from("s:").bold(),
+                Span::from(" (De)Activate Shell"),
+            ];
             if self.shell_percentage_split.is_some() {
                 base_message.extend([
                     Span::from(" | "),
@@ -57,13 +63,7 @@ impl Sections {
                 ])
             }
             match self.focused_section {
-                FocusedSection::Sessions => {
-                    base_message.extend([
-                        Span::from(" | "),
-                        Span::from("s:").bold(),
-                        Span::from(" (De)Activate Shell"),
-                    ]);
-                }
+                FocusedSection::Sessions => {}
                 _ => {}
             };
             base_message
@@ -192,19 +192,19 @@ impl Sections {
                     }
                     _ => {}
                 },
+                KeyCode::Char('s') => {
+                    self.shell_percentage_split = if let Some(_) = self.shell_percentage_split {
+                        None
+                    } else {
+                        Some(20)
+                    };
+                }
                 _ => match self.focused_section {
                     FocusedSection::Sessions => match key_event.code {
                         KeyCode::Enter => {}
                         KeyCode::Char('j') | KeyCode::Down => self.session_section.next_row(),
                         KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_row(),
-                        KeyCode::Char('s') => {
-                            self.shell_percentage_split =
-                                if let Some(_) = self.shell_percentage_split {
-                                    None
-                                } else {
-                                    Some(20)
-                                };
-                        }
+
                         _ => {}
                     },
                     FocusedSection::Shell => {
