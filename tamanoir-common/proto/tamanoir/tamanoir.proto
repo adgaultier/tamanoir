@@ -22,6 +22,7 @@ message SessionResponse {
   SessionRcePayload rce_payload=3;
   string first_packet =4;
   string latest_packet=5;
+  uint32 n_packets=6;
 }
 message SetSessionRceRequest {
   string ip=1;

@@ -62,8 +62,9 @@ impl Session for SessionsStore {
                 ip: s.ip.to_string(),
                 key_codes: s.key_codes.iter().map(|byte| *byte as u32).collect(),
                 rce_payload: rce_payload,
-                first_packet: format!("{}", s.first_packet),
-                latest_packet: format!("{}", s.latest_packet),
+                first_packet: s.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
+                latest_packet: s.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
+                n_packets: s.n_packets as u32,
             })
         }
 
@@ -92,8 +93,9 @@ impl Session for SessionsStore {
                     ip: session.ip.to_string(),
                     key_codes: session.key_codes.iter().map(|byte| *byte as u32).collect(),
                     rce_payload: rce_payload,
-                    first_packet: format!("{}", session.first_packet),
-                    latest_packet: format!("{}", session.latest_packet),
+                    first_packet:  session.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
+                    latest_packet: session.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
+                    n_packets:session.n_packets as u32
                 };
 
 
