@@ -37,7 +37,8 @@ message AvailableRceResponse {
   repeated SessionRcePayload rce_list =1;
 }
 message ShellStd {
-  string message=1;
+  string ip =1;
+  string message=2;
 }
 
 service Session {

@@ -9,10 +9,10 @@ use tonic::{transport::Server, Code, Request, Response, Status};
 use crate::{
     tamanoir_grpc::{
         rce_server::{Rce, RceServer},
-        remote_shell_server::RemoteShellServer,
+        remote_shell_server::{RemoteShell, RemoteShellServer},
         session_server::{Session, SessionServer},
         AvailableRceResponse, DeleteSessionRceRequest, Empty, ListSessionsResponse,
-        SessionRcePayload, SessionResponse, SetSessionRceRequest,
+        SessionRcePayload, SessionResponse, SetSessionRceRequest, ShellStd,
     },
     tcp_shell::TcpShell,
     SessionsStore, TargetArch,
@@ -211,5 +211,51 @@ impl Rce for SessionsStore {
                 format!("{}: session not found", ip),
             )),
         }
+    }
+}
+
+#[tonic::async_trait]
+impl RemoteShell for TcpShell {
+    type WatchShellStdOutStream =
+        Pin<Box<dyn Stream<Item = Result<ShellStd, Status>> + Send + 'static>>;
+
+    async fn watch_shell_std_out(
+        &self,
+        _request: Request<Empty>,
+    ) -> Result<Response<Self::WatchShellStdOutStream>, Status> {
+        let mut rx = self.stdout_broadcast_tx.subscribe();
+
+        let stream = async_stream::try_stream! {
+        while let Ok(msg) = rx.recv().await {
+                yield msg;
+        }
+        };
+        Ok(Response::new(
+            Box::pin(stream) as Self::WatchShellStdOutStream
+        ))
+    }
+    async fn send_shell_std_in(
+        &self,
+        request: Request<ShellStd>,
+    ) -> Result<Response<Empty>, Status> {
+        debug!(
+            "<SendShellStdIn> Got a request from {:?}",
+            request.remote_addr()
+        );
+        let req = request.into_inner();
+
+        let rxtx = self.get_rx_tx(req.ip.clone()).map_err(|_| {
+            Status::new(
+                Code::NotFound,
+                format!("{}: socket not found", req.ip.clone()),
+            )
+        })?;
+        rxtx.stdin_tx.send(req.clone()).await.map_err(|_| {
+            Status::new(
+                Code::Internal,
+                format!("{}: couldn't write to socket", req.ip),
+            )
+        })?;
+        return Ok(Response::new(Empty {}));
     }
 }

@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Block, BorderType, Paragraph, Wrap},
     Frame,
 };
-use utils::Layout;
+use utils::{format_keys, parse_keycodes, Layout};
 
 use crate::tamanoir_grpc::SessionResponse;
 
@@ -29,8 +29,8 @@ impl KeyLoggerSection {
         is_focused: bool,
     ) {
         let txt = match selected_session {
-            Some(session) => match session.parse_keycodes(self.layout.clone()) {
-                Ok(kc) => Text::from(SessionResponse::format_keys(kc)),
+            Some(session) => match parse_keycodes(&session.key_codes, self.layout.clone()) {
+                Ok(kc) => Text::from(format_keys(kc)),
 
                 Err(_) => Text::from("Error decoding keycodes".to_string()).centered(),
             },

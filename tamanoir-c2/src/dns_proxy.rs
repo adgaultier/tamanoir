@@ -27,8 +27,7 @@ pub async fn mangle(
     if data.len() <= payload_len {
         return Err(Error::msg("data to short"));
     }
-    let mut current_sessions: tokio::sync::MutexGuard<'_, HashMap<Ipv4Addr, Session>> =
-        sessions.lock().await;
+    let mut current_sessions = sessions.lock().await;
     let payload_it = data[data.len() - payload_len..].iter();
 
     //let layout = Layout::from(*payload_it.next().ok_or(Error::msg("data to short"))?); //first byte is layout
@@ -147,7 +146,16 @@ impl DnsProxy {
             "couldn't parse addr for session {}",
             addr
         )))?;
-
+        match s.ip.octets() {
+            [127, 0, 0, 1] => {
+                // just forward hypotetical localhost queries
+                if let Ok(data) = forward_req(&Vec::from(buf), self.forward_ip).await {
+                    let _ = sock.send_to(&data, addr).await?;
+                    return Ok(());
+                }
+            }
+            _ => {}
+        };
         {
             let mut current_sessions = sessions_store.sessions.lock().await;
             if let Entry::Vacant(e) = current_sessions.entry(s.ip) {

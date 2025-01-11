@@ -32,6 +32,7 @@ async fn main() -> AppResult<()> {
 
     while app.running {
         tui.draw(&mut app)?;
+
         if let Event::Key(key_event) = tui.events.next().await? {
             handle_key_events(key_event, &mut app).await?
         }

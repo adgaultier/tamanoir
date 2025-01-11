@@ -15,7 +15,7 @@ use tui_input::{backend::crossterm::EventHandler, Input};
 
 use crate::{app::AppResult, grpc::RemoteShellServiceClient};
 pub type ShellCmdHistory = Arc<RwLock<Vec<ShellCmd>>>;
-
+use crate::tamanoir_grpc::SessionResponse;
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShellStdType {
     StdIn,
@@ -220,6 +220,7 @@ impl ShellSection {
         &mut self,
         key_event: KeyEvent,
         shell_client: &mut RemoteShellServiceClient,
+        current_session: Option<SessionResponse>,
     ) -> AppResult<()> {
         if key_event.modifiers.contains(KeyModifiers::SHIFT) {
             match key_event.code {
@@ -234,14 +235,18 @@ impl ShellSection {
         match key_event.code {
             KeyCode::Enter => {
                 let cmd = self.shell_input.to_string();
-                shell_client.send_cmd(cmd.clone()).await?;
-                self.items.write().unwrap().push(ShellCmd {
-                    inner: cmd,
-                    std_type: ShellStdType::StdIn,
-                });
-                self.shell_input.reset();
-                self.history_index = self.get_stdin_history().len();
-                self.unselect();
+                if let Some(session) = current_session {
+                    shell_client
+                        .send_cmd(session.ip.clone(), cmd.clone())
+                        .await?;
+                    self.items.write().unwrap().push(ShellCmd {
+                        inner: cmd,
+                        std_type: ShellStdType::StdIn,
+                    });
+                    self.shell_input.reset();
+                    self.history_index = self.get_stdin_history().len();
+                    self.unselect();
+                }
             }
             KeyCode::Up => {
                 self.history_index = self.history_index.saturating_sub(1);

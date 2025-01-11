@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
-    layout::{Constraint, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
     widgets::{Block, BorderType, Cell, HighlightSpacing, Row, ScrollbarState, Table, TableState},
@@ -20,6 +20,11 @@ pub struct SessionSection {
     scroll_state: ScrollbarState,
     pub selected_session: Option<SessionResponse>,
 }
+
+fn compute_payload_tx_pct(total_len: u32, remaining_len: u32) -> u8 {
+    ((total_len.saturating_sub(remaining_len) as f32 / total_len as f32) * 100f32).min(100f32) as u8
+}
+
 impl SessionSection {
     pub fn new(sessions: SessionsMap) -> Self {
         Self {
@@ -30,6 +35,7 @@ impl SessionSection {
             selected_session: None,
         }
     }
+
     pub async fn init(&mut self, client: &mut SessionServiceClient) -> AppResult<()> {
         for s in client.list_sessions().await? {
             self.sessions.write().unwrap().insert(s.ip.clone(), s);
@@ -81,6 +87,14 @@ impl SessionSection {
     }
 
     pub fn render(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
+        let (session_selection, session_info) = {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Length(18), Constraint::Fill(1)])
+                .flex(ratatui::layout::Flex::SpaceBetween)
+                .split(block);
+            (chunks[0], chunks[1])
+        };
         let selected_row_style = Style::default()
             .add_modifier(Modifier::REVERSED)
             .fg(Color::LightBlue);
@@ -109,7 +123,94 @@ impl SessionSection {
                     )),
             );
 
-        frame.render_stateful_widget(table, block, &mut self.state);
+        frame.render_stateful_widget(table, session_selection, &mut self.state);
+        if let Some(s) = &self.selected_session {
+            let (stats, rce) = {
+                let chunks = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .constraints([Constraint::Fill(1), Constraint::Fill(1)])
+                    .flex(ratatui::layout::Flex::SpaceBetween)
+                    .split(session_info);
+                (chunks[0], chunks[1])
+            };
+            let cells_stats = vec![
+                Cell::from(Span::from("Received Packets:").bold()),
+                Cell::from(Span::from(s.n_packets.to_string())),
+                Cell::from(Span::from("First Packet:").bold()),
+                Cell::from(Span::from(s.first_packet.clone())),
+                Cell::from(Span::from("Latest Packet:").bold()),
+                Cell::from(Span::from(s.latest_packet.clone())),
+                Cell::from(Span::from("Shell Status:").bold()),
+                Cell::from(Span::from(format!("{}", s.get_shell_status()))),
+            ];
+            let rows_stats: Vec<Row> = cells_stats
+                .chunks(2)
+                .map(|r| Row::new(r.to_vec()))
+                .collect();
+            let table_stats: Table<'_> =
+                Table::new(rows_stats, [Constraint::Fill(1), Constraint::Fill(1)]).block(
+                    Block::bordered()
+                        .border_type(BorderType::Rounded)
+                        .border_style(Style::new().fg(Color::Blue))
+                        .title(Span::styled(
+                            "Session Info",
+                            Style::default().fg(Color::Blue).bold(),
+                        )),
+                );
+
+            let rce_info: (String, String, String, String) = match &s.rce_payload {
+                None => ("".into(), "".into(), "".into(), "".into()),
+                Some(rce) => (
+                    rce.name.clone(),
+                    format!("{} bytes", rce.length),
+                    rce.target_arch.clone(),
+                    format!(
+                        "{} %",
+                        compute_payload_tx_pct(rce.length, rce.buffer_length)
+                    ),
+                ),
+            };
+            let cells_rce = vec![
+                Cell::from(Span::from("Selected Payload:").bold()),
+                Cell::from(Span::from(rce_info.0)),
+                Cell::from(Span::from("Size:").bold()),
+                Cell::from(Span::from(rce_info.1)),
+                Cell::from(Span::from("Target Arch:").bold()),
+                Cell::from(Span::from(rce_info.2)),
+                Cell::from(Span::from("Tx Status:").bold()),
+                Cell::from(Span::from(rce_info.3)),
+            ];
+            let rows_rce: Vec<Row> = cells_rce.chunks(2).map(|r| Row::new(r.to_vec())).collect();
+            let table_rce = Table::new(rows_rce, [Constraint::Length(20), Constraint::Fill(1)])
+                .block(
+                    Block::bordered()
+                        .border_type(BorderType::Rounded)
+                        .border_style(Style::new().fg(Color::Blue))
+                        .title(Span::styled(
+                            "Payload Transmission",
+                            Style::default().fg(Color::Blue).bold(),
+                        )),
+                );
+            frame.render_widget(table_stats, stats);
+            frame.render_widget(table_rce, rce);
+        } else {
+            let table: Table<'_> = Table::new(
+                [Row::new([Cell::from("No session available")])
+                    .style(Style::new().fg(Color::White))],
+                [Constraint::Fill(1)],
+            )
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::new().fg(Color::Blue))
+                    .title(Span::styled(
+                        "Session Info",
+                        Style::default().fg(Color::Blue).bold(),
+                    )),
+            );
+
+            frame.render_widget(table, session_info);
+        };
     }
 
     pub async fn handle_keys(&mut self, key_event: KeyEvent) -> AppResult<()> {

@@ -55,8 +55,9 @@ impl RemoteShellServiceClient {
         let client = RemoteShellClient::connect(format!("http://{}:{}", ip, port)).await?;
         Ok(Self { client })
     }
-    pub async fn send_cmd(&mut self, cmd: String) -> AppResult<()> {
+    pub async fn send_cmd(&mut self, ip: String, cmd: String) -> AppResult<()> {
         let shell_msg = ShellStd {
+            ip,
             message: cmd.clone(),
         };
         let msg = Request::new(shell_msg);
@@ -72,16 +73,17 @@ impl RceServiceClient {
     }
     pub async fn set_session_rce(
         &mut self,
-        session_id: String,
+        session_ip: String,
         rce: String,
         target_arch: String,
     ) -> AppResult<()> {
         let msg = SetSessionRceRequest {
-            ip: session_id,
+            ip: session_ip.clone(),
             rce,
             target_arch,
         };
         self.client.set_session_rce(msg).await?;
+
         Ok(())
     }
     pub async fn delete_session_rce(&mut self, session_id: String) -> AppResult<()> {
