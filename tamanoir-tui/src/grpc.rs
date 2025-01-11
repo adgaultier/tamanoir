@@ -11,7 +11,7 @@ use crate::{
     app::{AppResult, SessionsMap},
     section::{
         keylogger::utils::init_keymaps,
-        shell::{ShellCmd, ShellCmdHistory, ShellStdType},
+        shell::{ShellCommandEntry, ShellCommandHistory, ShellHistoryEntryType},
     },
     tamanoir_grpc::{
         rce_client::RceClient, remote_shell_client::RemoteShellClient,
@@ -107,17 +107,18 @@ pub trait StreamReceiver<T> {
     ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send;
 }
 
-impl StreamReceiver<Vec<ShellCmd>> for RemoteShellServiceClient {
-    async fn listen(&mut self, update_object: ShellCmdHistory) -> anyhow::Result<()> {
+impl StreamReceiver<Vec<ShellCommandEntry>> for RemoteShellServiceClient {
+    async fn listen(&mut self, update_object: ShellCommandHistory) -> anyhow::Result<()> {
         let mut stream = self
             .client
             .watch_shell_std_out(Request::new(Empty {}))
             .await?
             .into_inner();
-        while let Some(msg) = stream.next().await {
-            update_object.write().unwrap().push(ShellCmd {
-                inner: msg?.message,
-                std_type: ShellStdType::StdOut,
+
+        while let Some(Ok(msg)) = stream.next().await {
+            update_object.write().unwrap().push(ShellCommandEntry {
+                entry_type: ShellHistoryEntryType::Response,
+                text: msg.message,
             });
         }
         Ok(())
