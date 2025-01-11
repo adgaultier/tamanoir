@@ -31,7 +31,7 @@ pub enum FocusedSection {
 #[derive(Debug)]
 pub struct Sections {
     pub focused_section: FocusedSection,
-    pub shell: Shell,
+    pub shell_section: Shell,
     pub keylogger_section: keylogger::KeyLoggerSection,
     pub session_section: session::SessionSection,
     pub shell_percentage_split: Option<u16>,
@@ -41,7 +41,7 @@ impl Sections {
     pub fn new(shell_history: ShellCommandHistory, sessions: SessionsMap) -> Self {
         Self {
             focused_section: FocusedSection::Sessions,
-            shell: Shell::new(shell_history),
+            shell_section: Shell::new(shell_history),
             keylogger_section: keylogger::KeyLoggerSection::new(),
             session_section: session::SessionSection::new(sessions),
             shell_percentage_split: None,
@@ -54,13 +54,13 @@ impl Sections {
                 Span::from(" ").bold(),
                 Span::from(" Nav"),
                 Span::from(" | "),
-                Span::from("s:").bold(),
+                Span::from("󰘶 + s:").bold(),
                 Span::from(" (De)Activate Shell"),
             ];
             if self.shell_percentage_split.is_some() {
                 base_message.extend([
                     Span::from(" | "),
-                    Span::from("Ctrl + ").bold(),
+                    Span::from("󰘶 + :").bold(),
                     Span::from(" Resize shell"),
                 ])
             }
@@ -134,7 +134,7 @@ impl Sections {
             self.focused_section == FocusedSection::KeyLogger,
         );
         if let Some(shell_block) = shell_block {
-            self.shell.render(
+            self.shell_section.render(
                 frame,
                 shell_block.inner(Margin {
                     horizontal: 1,
@@ -151,86 +151,74 @@ impl Sections {
         shell_client: &mut RemoteShellServiceClient,
         _session_client: &mut SessionServiceClient,
     ) -> AppResult<()> {
-        if key_event.modifiers.contains(KeyModifiers::ALT) {
-            if let Some(k) = self.shell_percentage_split {
-                match key_event.code {
-                    KeyCode::Char('j') | KeyCode::Down => {
-                        self.shell_percentage_split = Some(k.saturating_sub(5).max(20));
-                    }
-                    KeyCode::Char('k') | KeyCode::Up => {
-                        self.shell_percentage_split = Some((k + 5).min(90));
-                    }
-                    _ => {}
-                }
-            }
-        } else {
-            match key_event.code {
-                KeyCode::Tab => match self.focused_section {
-                    FocusedSection::Sessions => self.focused_section = FocusedSection::KeyLogger,
-                    FocusedSection::KeyLogger => {
-                        if self.shell_percentage_split.is_some() {
-                            self.focused_section = FocusedSection::Shell
-                        } else {
-                            self.focused_section = FocusedSection::Sessions
-                        }
-                    }
-                    FocusedSection::Shell => self.focused_section = FocusedSection::Sessions,
-                    _ => {}
-                },
-                KeyCode::BackTab => match self.focused_section {
-                    FocusedSection::KeyLogger => self.focused_section = FocusedSection::Sessions,
-                    FocusedSection::Shell => self.focused_section = FocusedSection::KeyLogger,
-                    FocusedSection::Sessions => {
-                        if self.shell_percentage_split.is_some() {
-                            self.focused_section = FocusedSection::Shell
-                        } else {
-                            self.focused_section = FocusedSection::KeyLogger
-                        }
-                    }
-                    _ => {}
-                },
-                KeyCode::Char('s') if key_event.modifiers == KeyModifiers::CONTROL => {
+        match key_event.code {
+            KeyCode::Tab => match self.focused_section {
+                FocusedSection::Sessions => self.focused_section = FocusedSection::KeyLogger,
+                FocusedSection::KeyLogger => {
                     if self.shell_percentage_split.is_some() {
-                        self.shell_percentage_split = None;
-                        if self.focused_section == FocusedSection::Shell {
-                            self.focused_section = FocusedSection::Sessions;
-                        }
+                        self.focused_section = FocusedSection::Shell
                     } else {
-                        self.shell_percentage_split = Some(20);
-                        self.focused_section = FocusedSection::Shell;
-                    };
-                }
-                _ => match self.focused_section {
-                    FocusedSection::Sessions => match key_event.code {
-                        KeyCode::Enter => {}
-                        KeyCode::Char('j') | KeyCode::Down => self.session_section.next_row(),
-                        KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_row(),
-                        _ => {}
-                    },
-                    FocusedSection::KeyLogger => match key_event.code {
-                        KeyCode::Char('s') => {
-                            self.shell_percentage_split =
-                                if let Some(_) = self.shell_percentage_split {
-                                    None
-                                } else {
-                                    Some(20)
-                                };
-                        }
-                        _ => {}
-                    },
-                    FocusedSection::Shell => {
-                        self.shell_section
-                            .handle_keys(
-                                key_event,
-                                shell_client,
-                                self.session_section.selected_session.clone(),
-                            )
-                            .await?;
+                        self.focused_section = FocusedSection::Sessions
                     }
+                }
+                FocusedSection::Shell => self.focused_section = FocusedSection::Sessions,
+                _ => {}
+            },
+            KeyCode::BackTab => match self.focused_section {
+                FocusedSection::KeyLogger => self.focused_section = FocusedSection::Sessions,
+                FocusedSection::Shell => self.focused_section = FocusedSection::KeyLogger,
+                FocusedSection::Sessions => {
+                    if self.shell_percentage_split.is_some() {
+                        self.focused_section = FocusedSection::Shell
+                    } else {
+                        self.focused_section = FocusedSection::KeyLogger
+                    }
+                }
+                _ => {}
+            },
+            KeyCode::Char('S') if key_event.modifiers == KeyModifiers::SHIFT => {
+                if self.shell_percentage_split.is_some() {
+                    self.shell_percentage_split = None;
+                    if self.focused_section == FocusedSection::Shell {
+                        self.focused_section = FocusedSection::Sessions;
+                    }
+                } else {
+                    self.shell_percentage_split = Some(20);
+                    self.focused_section = FocusedSection::Shell;
+                }
+            }
+            KeyCode::Char('J') | KeyCode::Down if key_event.modifiers == KeyModifiers::SHIFT => {
+                if let Some(split) = self.shell_percentage_split {
+                    self.shell_percentage_split = Some(split.saturating_sub(5).max(20))
+                };
+            }
+            KeyCode::Char('K') | KeyCode::Up if key_event.modifiers == KeyModifiers::SHIFT => {
+                if let Some(split) = self.shell_percentage_split {
+                    self.shell_percentage_split = Some((split + 5).min(90));
+                }
+            }
 
+            _ => match self.focused_section {
+                FocusedSection::Sessions => match key_event.code {
+                    KeyCode::Char('j') | KeyCode::Down => self.session_section.next_row(),
+                    KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_row(),
                     _ => {}
                 },
-            }
+                FocusedSection::KeyLogger => match key_event.code {
+                    _ => {}
+                },
+                FocusedSection::Shell => {
+                    self.shell_section
+                        .handle_keys(
+                            key_event,
+                            shell_client,
+                            self.session_section.selected_session.clone(),
+                        )
+                        .await?;
+                }
+
+                _ => {}
+            },
         }
 
         Ok(())

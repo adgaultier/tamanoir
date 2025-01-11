@@ -81,7 +81,7 @@ impl Shell {
         let mut scrollbar_state =
             ScrollbarState::new(vertical_scroll).position(self.vertical_scroll.into());
 
-        let hisotory = Paragraph::new(text)
+        let history = Paragraph::new(text)
             .wrap(Wrap { trim: true })
             .scroll((
                 {
@@ -103,7 +103,7 @@ impl Shell {
                     .border_style(Style::new().fg(highlight_color)),
             );
 
-        frame.render_widget(hisotory, block);
+        frame.render_widget(history, block);
         frame.render_stateful_widget(
             scrollbar,
             block.inner(Margin {
@@ -136,12 +136,12 @@ impl Shell {
                 self.prompt.reset();
             }
 
-            KeyCode::Char('k') if key_event.modifiers == KeyModifiers::CONTROL => {
+            KeyCode::Char('k') | KeyCode::Up if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.manual_scroll = true;
                 self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
             }
 
-            KeyCode::Char('j') if key_event.modifiers == KeyModifiers::CONTROL => {
+            KeyCode::Char('j') | KeyCode::Down if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.manual_scroll = true;
                 self.vertical_scroll = self.vertical_scroll.saturating_add(1);
             }
