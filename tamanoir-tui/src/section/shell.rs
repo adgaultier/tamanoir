@@ -130,6 +130,7 @@ impl Shell {
             }
         } else {
             let message = Paragraph::new(Line::from(Span::raw("Shell Not Connected")).bold())
+                .centered()
                 .block(
                     Block::bordered()
                         .border_type(BorderType::Rounded)

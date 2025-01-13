@@ -1,7 +1,7 @@
 pub mod utils;
 
 use ratatui::{
-    layout::{Margin, Rect},
+    layout::Rect,
     style::{Color, Style, Stylize},
     text::{Span, Text},
     widgets::{Block, BorderType, Paragraph, Wrap},
@@ -51,12 +51,6 @@ impl KeyLoggerSection {
                 )),
         );
 
-        frame.render_widget(
-            p,
-            block.inner(Margin {
-                horizontal: 1,
-                vertical: 0,
-            }),
-        );
+        frame.render_widget(p, block);
     }
 }

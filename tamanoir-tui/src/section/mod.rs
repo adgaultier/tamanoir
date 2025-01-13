@@ -6,7 +6,7 @@ use std::fmt::Display;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Margin, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Paragraph},
@@ -57,22 +57,33 @@ impl Sections {
                 Span::from("󰘶 + s:").bold(),
                 Span::from(" (De)Activate Shell"),
             ];
-            if self.focused_section == FocusedSection::Shell {
-                base_message.extend([
-                    Span::from(" | "),
-                    Span::from("󰘶 + :").bold().yellow(),
-                    Span::from(" Resize shell").yellow(),
-                    Span::from(" | "),
-                    Span::from("Ctrl + :").bold().yellow(),
-                    Span::from(" Scroll").yellow(),
-                ]);
-                if self.shell_section.manual_scroll {
+
+            match self.focused_section {
+                FocusedSection::Shell => {
                     base_message.extend([
                         Span::from(" | "),
-                        Span::from("󱊷 :").bold().yellow(),
-                        Span::from(" Exit scroll mode").yellow(),
-                    ])
+                        Span::from("󰘶 + :").bold().yellow(),
+                        Span::from(" Resize shell").yellow(),
+                        Span::from(" | "),
+                        Span::from("Ctrl + :").bold().yellow(),
+                        Span::from(" Scroll").yellow(),
+                    ]);
+                    if self.shell_section.manual_scroll {
+                        base_message.extend([
+                            Span::from(" | "),
+                            Span::from("󱊷 :").bold().yellow(),
+                            Span::from(" Exit scroll mode").yellow(),
+                        ])
+                    }
                 }
+                FocusedSection::Sessions => {
+                    base_message.extend([
+                        Span::from(" | "),
+                        Span::from("e:").bold().yellow(),
+                        Span::from(" Edit").yellow(),
+                    ]);
+                }
+                _ => {}
             }
 
             base_message
@@ -101,7 +112,7 @@ impl Sections {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Fill(1), Constraint::Length(3)])
-                .flex(ratatui::layout::Flex::SpaceBetween)
+                //.flex(ratatui::layout::Flex::)
                 .split(frame.area());
 
             (chunks[0], chunks[1])
@@ -110,7 +121,7 @@ impl Sections {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Length(6), Constraint::Fill(1)])
-                .flex(ratatui::layout::Flex::SpaceBetween)
+                //.flex(ratatui::layout::Flex::Start)
                 .split(main_block);
             (chunks[0], chunks[1])
         };
@@ -129,7 +140,7 @@ impl Sections {
                     let chunks = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints([Constraint::Fill(1), Constraint::Percentage(k)])
-                        .flex(ratatui::layout::Flex::SpaceBetween)
+                        //.flex(ratatui::layout::Flex::Center)
                         .split(main_block);
                     (chunks[0], Some(chunks[1]))
                 }
@@ -137,7 +148,7 @@ impl Sections {
                     let chunks = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints([Constraint::Fill(1)])
-                        .flex(ratatui::layout::Flex::SpaceBetween)
+                        //.flex(ratatui::layout::Flex::SpaceBetween)
                         .split(main_block);
                     (chunks[0], None)
                 }
@@ -152,10 +163,7 @@ impl Sections {
         if let Some(shell_block) = shell_block {
             self.shell_section.render(
                 frame,
-                shell_block.inner(Margin {
-                    horizontal: 1,
-                    vertical: 0,
-                }),
+                shell_block,
                 self.focused_section == FocusedSection::Shell,
                 self.shell_available(),
             );
