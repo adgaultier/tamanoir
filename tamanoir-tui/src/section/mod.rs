@@ -57,20 +57,20 @@ impl Sections {
                 Span::from("󰘶 + s:").bold(),
                 Span::from(" (De)Activate Shell"),
             ];
-            if self.shell_percentage_split.is_some() {
+            if self.focused_section == FocusedSection::Shell {
                 base_message.extend([
                     Span::from(" | "),
-                    Span::from("󰘶 + :").bold(),
-                    Span::from(" Resize shell"),
+                    Span::from("󰘶 + :").bold().yellow(),
+                    Span::from(" Resize shell").yellow(),
                     Span::from(" | "),
-                    Span::from("Ctrl + :").bold(),
-                    Span::from(" Scroll"),
+                    Span::from("Ctrl + :").bold().yellow(),
+                    Span::from(" Scroll").yellow(),
                 ]);
                 if self.shell_section.manual_scroll {
                     base_message.extend([
                         Span::from(" | "),
-                        Span::from("󱊷 :").bold(),
-                        Span::from(" Exit scroll mode"),
+                        Span::from("󱊷 :").bold().yellow(),
+                        Span::from(" Exit scroll mode").yellow(),
                     ])
                 }
             }
@@ -90,6 +90,12 @@ impl Sections {
         );
     }
 
+    fn shell_available(&self) -> bool {
+        if let Some(session) = &self.session_section.selected_session {
+            return session.get_shell_status() == ShellAvailablilityStatus::Connected;
+        }
+        false
+    }
     pub fn render(&mut self, frame: &mut Frame) {
         let (main_block, help_block) = {
             let chunks = Layout::default()
@@ -151,17 +157,18 @@ impl Sections {
                     vertical: 0,
                 }),
                 self.focused_section == FocusedSection::Shell,
+                self.shell_available(),
             );
         }
     }
     pub async fn handle_mouse(&mut self, mouse_event: MouseEvent) -> AppResult<()> {
         match mouse_event.kind {
             MouseEventKind::ScrollUp => match self.focused_section {
-                FocusedSection::Shell => self.shell_section.scroll_up(),
+                FocusedSection::Shell if self.shell_available() => self.shell_section.scroll_up(),
                 _ => {}
             },
             MouseEventKind::ScrollDown => match self.focused_section {
-                FocusedSection::Shell => self.shell_section.scroll_down(),
+                FocusedSection::Shell if self.shell_available() => self.shell_section.scroll_down(),
                 _ => {}
             },
 
@@ -214,12 +221,18 @@ impl Sections {
                     self.focused_section = FocusedSection::Shell;
                 }
             }
-            KeyCode::Char('J') | KeyCode::Down if key_event.modifiers == KeyModifiers::SHIFT => {
+            KeyCode::Char('J') | KeyCode::Down
+                if (key_event.modifiers == KeyModifiers::SHIFT
+                    && self.focused_section == FocusedSection::Shell) =>
+            {
                 if let Some(split) = self.shell_percentage_split {
                     self.shell_percentage_split = Some(split.saturating_sub(5).max(20))
                 };
             }
-            KeyCode::Char('K') | KeyCode::Up if key_event.modifiers == KeyModifiers::SHIFT => {
+            KeyCode::Char('K') | KeyCode::Up
+                if (key_event.modifiers == KeyModifiers::SHIFT
+                    && self.focused_section == FocusedSection::Shell) =>
+            {
                 if let Some(split) = self.shell_percentage_split {
                     self.shell_percentage_split = Some((split + 5).min(90));
                 }
@@ -234,7 +247,7 @@ impl Sections {
                 FocusedSection::KeyLogger => match key_event.code {
                     _ => {}
                 },
-                FocusedSection::Shell => {
+                FocusedSection::Shell if self.shell_available() => {
                     self.shell_section
                         .handle_keys(
                             key_event,
@@ -251,6 +264,7 @@ impl Sections {
         Ok(())
     }
 }
+#[derive(PartialEq)]
 pub enum ShellAvailablilityStatus {
     NotSelectedForTransmission,
     Transmiting,

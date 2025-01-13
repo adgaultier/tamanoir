@@ -62,70 +62,84 @@ impl Shell {
             .map(|cmd| cmd.text.clone())
             .collect::<Vec<String>>()
     }
-    pub fn render(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
+    pub fn render(&mut self, frame: &mut Frame, block: Rect, is_focused: bool, is_available: bool) {
         let highlight_color = if is_focused {
             Color::Yellow
         } else {
             Color::Blue
         };
         self.current_height = block.height as usize;
-        let binding = self.history.read().unwrap();
-        let mut text: Vec<Line> = binding
-            .iter()
-            .map(|entry| match entry.entry_type {
-                ShellHistoryEntryType::Command => {
-                    vec![Line::from(Span::raw(format!("$ {}", entry.text)).bold())]
-                }
-                ShellHistoryEntryType::Response => entry
-                    .text
-                    .split('\n')
-                    .filter(|s| s.len() > 0)
-                    .map(Line::from)
-                    .collect(),
-            })
-            .flatten()
-            .collect();
+        if is_available {
+            let binding = self.history.read().unwrap();
+            let mut text: Vec<Line> = binding
+                .iter()
+                .map(|entry| match entry.entry_type {
+                    ShellHistoryEntryType::Command => {
+                        vec![Line::from(Span::raw(format!("$ {}", entry.text)).bold())]
+                    }
+                    ShellHistoryEntryType::Response => entry
+                        .text
+                        .split('\n')
+                        .filter(|s| s.len() > 0)
+                        .map(Line::from)
+                        .collect(),
+                })
+                .flatten()
+                .collect();
 
-        let prompt_text = Line::from(Span::from(format!("$ {}", self.prompt.value())).bold());
-        text.push(prompt_text);
+            let prompt_text = Line::from(Span::from(format!("$ {}", self.prompt.value())).bold());
+            text.push(prompt_text);
 
-        self.max_scroll = text.len() - 1;
-        self.vertical_scroll_state = self.vertical_scroll_state.content_length(self.max_scroll);
-        if !self.manual_scroll {
-            let cursor = self
-                .max_scroll
-                .saturating_sub(self.current_height.saturating_sub(3));
-            self.vertical_scroll_state = self.vertical_scroll_state.position(cursor);
-            self.vertical_scroll = cursor as u16;
-        };
+            self.max_scroll = text.len() - 1;
+            self.vertical_scroll_state = self.vertical_scroll_state.content_length(self.max_scroll);
+            if !self.manual_scroll {
+                let cursor = self
+                    .max_scroll
+                    .saturating_sub(self.current_height.saturating_sub(3));
+                self.vertical_scroll_state = self.vertical_scroll_state.position(cursor);
+                self.vertical_scroll = cursor as u16;
+            };
 
-        let history = Paragraph::new(text)
-            .wrap(Wrap { trim: true })
-            .scroll((self.vertical_scroll, 0))
-            .block(
-                Block::bordered()
-                    .border_type(BorderType::Rounded)
-                    .title(Span::styled(
-                        "Remote Shell",
-                        Style::default().fg(highlight_color).bold(),
-                    ))
-                    .border_style(Style::new().fg(highlight_color)),
-            );
+            let history = Paragraph::new(text)
+                .wrap(Wrap { trim: true })
+                .scroll((self.vertical_scroll, 0))
+                .block(
+                    Block::bordered()
+                        .border_type(BorderType::Rounded)
+                        .title(Span::styled(
+                            "Remote Shell",
+                            Style::default().fg(highlight_color).bold(),
+                        ))
+                        .border_style(Style::new().fg(highlight_color)),
+                );
 
-        frame.render_widget(history, block);
-        if self.manual_scroll {
-            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-                .begin_symbol(Some("↑"))
-                .end_symbol(Some("↓"));
+            frame.render_widget(history, block);
+            if self.manual_scroll {
+                let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                    .begin_symbol(Some("↑"))
+                    .end_symbol(Some("↓"));
 
-            frame.render_stateful_widget(
-                scrollbar,
-                block.inner(Margin {
-                    vertical: 1,
-                    horizontal: 0,
-                }),
-                &mut self.vertical_scroll_state,
-            );
+                frame.render_stateful_widget(
+                    scrollbar,
+                    block.inner(Margin {
+                        vertical: 1,
+                        horizontal: 0,
+                    }),
+                    &mut self.vertical_scroll_state,
+                );
+            }
+        } else {
+            let message = Paragraph::new(Line::from(Span::raw("Shell Not Connected")).bold())
+                .block(
+                    Block::bordered()
+                        .border_type(BorderType::Rounded)
+                        .title(Span::styled(
+                            "Remote Shell",
+                            Style::default().fg(highlight_color).bold(),
+                        ))
+                        .border_style(Style::new().fg(highlight_color)),
+                );
+            frame.render_widget(message, block);
         }
     }
     fn clear(&mut self) {

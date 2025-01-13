@@ -101,6 +101,7 @@ impl TcpShell {
             }
         });
 
+        let rx_tx_map_clone = self.rx_tx_map.clone();
         let read_task = tokio::spawn(async move {
             let mut buffer = vec![0; 1024];
             loop {
@@ -108,6 +109,7 @@ impl TcpShell {
                 match reader.read(&mut buffer).await {
                     Ok(0) => {
                         info!("Connection closed by client: {}", addr);
+                        rx_tx_map_clone.write().unwrap().remove(&ip.clone()); //remove connection
                         break;
                     }
                     Ok(n) => {
