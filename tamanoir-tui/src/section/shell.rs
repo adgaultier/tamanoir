@@ -4,7 +4,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Margin, Rect},
     style::{Color, Style, Stylize},
-    text::{Span, Text},
+    text::{Line, Span},
     widgets::{
         Block, BorderType, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap,
     },
@@ -33,7 +33,11 @@ pub struct Shell {
     prompt: Input,
     history: ShellCommandHistory,
     vertical_scroll: u16,
+    max_scroll: usize,
+    vertical_scroll_state: ScrollbarState,
     manual_scroll: bool,
+    history_index: usize,
+    current_height: usize,
 }
 
 impl Shell {
@@ -42,57 +46,62 @@ impl Shell {
             prompt: Input::default(),
             history,
             vertical_scroll: 0,
+            max_scroll: 2,
             manual_scroll: false,
+            vertical_scroll_state: ScrollbarState::default(),
+            current_height: 0,
+            history_index: 0,
         }
     }
-
+    fn get_stdin_history(&self) -> Vec<String> {
+        self.history
+            .read()
+            .unwrap()
+            .iter()
+            .filter(|cmd| cmd.entry_type == ShellHistoryEntryType::Command && cmd.text.len() > 0)
+            .map(|cmd| cmd.text.clone())
+            .collect::<Vec<String>>()
+    }
     pub fn render(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
         let highlight_color = if is_focused {
             Color::Yellow
         } else {
             Color::Blue
         };
-
-        let mut text: Text<'_> = self
-            .history
-            .read()
-            .unwrap()
+        self.current_height = block.height as usize;
+        let binding = self.history.read().unwrap();
+        let mut text: Vec<Line> = binding
             .iter()
             .map(|entry| match entry.entry_type {
                 ShellHistoryEntryType::Command => {
-                    format!("$ {}", entry.text)
+                    vec![Line::from(Span::raw(format!("$ {}", entry.text)).bold())]
                 }
-                ShellHistoryEntryType::Response => entry.text.clone(),
+                ShellHistoryEntryType::Response => entry
+                    .text
+                    .split('\n')
+                    .filter(|s| s.len() > 0)
+                    .map(Line::from)
+                    .collect(),
             })
+            .flatten()
             .collect();
 
-        let prompt_text = Text::from(format!("$ {}", self.prompt.value()));
-        text.extend(prompt_text);
+        let prompt_text = Line::from(Span::from(format!("$ {}", self.prompt.value())).bold());
+        text.push(prompt_text);
 
-        let vertical_scroll = (text.height() + 2).saturating_sub(block.height as usize);
-
+        self.max_scroll = text.len() - 1;
+        self.vertical_scroll_state = self.vertical_scroll_state.content_length(self.max_scroll);
         if !self.manual_scroll {
-            self.vertical_scroll = vertical_scroll as u16;
-        }
-
-        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .begin_symbol(Some("↑"))
-            .end_symbol(Some("↓"));
-        let mut scrollbar_state =
-            ScrollbarState::new(vertical_scroll).position(self.vertical_scroll.into());
+            let cursor = self
+                .max_scroll
+                .saturating_sub(self.current_height.saturating_sub(3));
+            self.vertical_scroll_state = self.vertical_scroll_state.position(cursor);
+            self.vertical_scroll = cursor as u16;
+        };
 
         let history = Paragraph::new(text)
             .wrap(Wrap { trim: true })
-            .scroll((
-                {
-                    if !self.manual_scroll {
-                        self.vertical_scroll
-                    } else {
-                        vertical_scroll as u16
-                    }
-                },
-                0,
-            ))
+            .scroll((self.vertical_scroll, 0))
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
@@ -104,16 +113,24 @@ impl Shell {
             );
 
         frame.render_widget(history, block);
-        frame.render_stateful_widget(
-            scrollbar,
-            block.inner(Margin {
-                vertical: 1,
-                horizontal: 0,
-            }),
-            &mut scrollbar_state,
-        );
-    }
+        if self.manual_scroll {
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(Some("↑"))
+                .end_symbol(Some("↓"));
 
+            frame.render_stateful_widget(
+                scrollbar,
+                block.inner(Margin {
+                    vertical: 1,
+                    horizontal: 0,
+                }),
+                &mut self.vertical_scroll_state,
+            );
+        }
+    }
+    fn clear(&mut self) {
+        self.history.write().unwrap().clear();
+    }
     pub async fn handle_keys(
         &mut self,
         key_event: KeyEvent,
@@ -123,27 +140,57 @@ impl Shell {
         match key_event.code {
             KeyCode::Enter => {
                 let command = self.prompt.value();
+                if command.to_string() == "clear" {
+                    self.clear();
+                } else {
+                    shell_client
+                        .send_cmd(current_session.unwrap().ip, command.to_string())
+                        .await?;
 
-                shell_client
-                    .send_cmd(current_session.unwrap().ip, command.to_string())
-                    .await?;
-
-                self.history.write().unwrap().push(ShellCommandEntry {
-                    text: command.to_string(),
-                    entry_type: ShellHistoryEntryType::Command,
-                });
+                    self.history.write().unwrap().push(ShellCommandEntry {
+                        text: command.to_string(),
+                        entry_type: ShellHistoryEntryType::Command,
+                    });
+                }
 
                 self.prompt.reset();
             }
+            KeyCode::Char('l') if key_event.modifiers == KeyModifiers::CONTROL => self.clear(),
 
             KeyCode::Char('k') | KeyCode::Up if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.manual_scroll = true;
                 self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+                self.vertical_scroll_state = self
+                    .vertical_scroll_state
+                    .position(self.vertical_scroll.into());
             }
 
             KeyCode::Char('j') | KeyCode::Down if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.manual_scroll = true;
-                self.vertical_scroll = self.vertical_scroll.saturating_add(1);
+                self.vertical_scroll = self
+                    .vertical_scroll
+                    .saturating_add(1)
+                    .min(self.max_scroll as u16);
+                self.vertical_scroll_state = self
+                    .vertical_scroll_state
+                    .position(self.vertical_scroll.into());
+            }
+            KeyCode::Up => {
+                self.history_index = self.history_index.saturating_sub(1);
+                if let Some(cmd) = self.get_stdin_history().get(self.history_index) {
+                    self.prompt = self.prompt.clone().with_value(cmd.clone());
+                }
+            }
+            KeyCode::Down => {
+                let current_idx: usize = self.get_stdin_history().len();
+                self.history_index = current_idx.min(self.history_index + 1);
+                if self.history_index < current_idx {
+                    if let Some(cmd) = self.get_stdin_history().get(self.history_index) {
+                        self.prompt = self.prompt.clone().with_value(cmd.clone());
+                    }
+                } else {
+                    self.prompt.reset();
+                }
             }
 
             KeyCode::Esc => {
