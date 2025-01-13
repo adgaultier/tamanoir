@@ -62,7 +62,17 @@ impl Sections {
                     Span::from(" | "),
                     Span::from("󰘶 + :").bold(),
                     Span::from(" Resize shell"),
-                ])
+                    Span::from(" | "),
+                    Span::from("Ctrl + :").bold(),
+                    Span::from(" Scroll"),
+                ]);
+                if self.shell_section.manual_scroll {
+                    base_message.extend([
+                        Span::from(" | "),
+                        Span::from("󱊷 :").bold(),
+                        Span::from(" Exit scroll mode"),
+                    ])
+                }
             }
 
             base_message

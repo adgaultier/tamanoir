@@ -35,7 +35,7 @@ pub struct Shell {
     vertical_scroll: u16,
     max_scroll: usize,
     vertical_scroll_state: ScrollbarState,
-    manual_scroll: bool,
+    pub manual_scroll: bool,
     history_index: usize,
     current_height: usize,
 }
