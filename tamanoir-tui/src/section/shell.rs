@@ -131,6 +131,23 @@ impl Shell {
     fn clear(&mut self) {
         self.history.write().unwrap().clear();
     }
+    pub fn scroll_up(&mut self) {
+        self.manual_scroll = true;
+        self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .position(self.vertical_scroll.into());
+    }
+    pub fn scroll_down(&mut self) {
+        self.manual_scroll = true;
+        self.vertical_scroll = self
+            .vertical_scroll
+            .saturating_add(1)
+            .min(self.max_scroll as u16);
+        self.vertical_scroll_state = self
+            .vertical_scroll_state
+            .position(self.vertical_scroll.into());
+    }
     pub async fn handle_keys(
         &mut self,
         key_event: KeyEvent,
@@ -158,22 +175,11 @@ impl Shell {
             KeyCode::Char('l') if key_event.modifiers == KeyModifiers::CONTROL => self.clear(),
 
             KeyCode::Char('k') | KeyCode::Up if key_event.modifiers == KeyModifiers::CONTROL => {
-                self.manual_scroll = true;
-                self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
-                self.vertical_scroll_state = self
-                    .vertical_scroll_state
-                    .position(self.vertical_scroll.into());
+                self.scroll_up();
             }
 
             KeyCode::Char('j') | KeyCode::Down if key_event.modifiers == KeyModifiers::CONTROL => {
-                self.manual_scroll = true;
-                self.vertical_scroll = self
-                    .vertical_scroll
-                    .saturating_add(1)
-                    .min(self.max_scroll as u16);
-                self.vertical_scroll_state = self
-                    .vertical_scroll_state
-                    .position(self.vertical_scroll.into());
+                self.scroll_down();
             }
             KeyCode::Up => {
                 self.history_index = self.history_index.saturating_sub(1);

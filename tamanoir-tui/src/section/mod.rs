@@ -4,7 +4,7 @@ pub mod shell;
 
 use std::fmt::Display;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Style, Stylize},
@@ -153,6 +153,23 @@ impl Sections {
                 self.focused_section == FocusedSection::Shell,
             );
         }
+    }
+    pub async fn handle_mouse(&mut self, mouse_event: MouseEvent) -> AppResult<()> {
+        match mouse_event.kind {
+            MouseEventKind::ScrollUp => match self.focused_section {
+                FocusedSection::Shell => self.shell_section.scroll_up(),
+                _ => {}
+            },
+            MouseEventKind::ScrollDown => match self.focused_section {
+                FocusedSection::Shell => self.shell_section.scroll_down(),
+                _ => {}
+            },
+
+            MouseEventKind::Down(_) => {}
+            MouseEventKind::Up(_) => {}
+            _ => {}
+        }
+        Ok(())
     }
 
     pub async fn handle_keys(

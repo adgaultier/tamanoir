@@ -6,8 +6,10 @@ use std::{
 };
 
 use anyhow::Result;
+use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::{
+    event::Event,
     grpc::{RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
     section::{shell::ShellCommandHistory, Sections},
     tamanoir_grpc::SessionResponse,
@@ -55,7 +57,25 @@ impl App {
             session_client,
         })
     }
-
+    pub async fn handle_tui_event(&mut self, event: Event) -> AppResult<()> {
+        match event {
+            Event::Key(key_event) => match key_event.code {
+                KeyCode::Char('c') | KeyCode::Char('C')
+                    if key_event.modifiers == KeyModifiers::CONTROL =>
+                {
+                    self.quit()
+                }
+                _ => {
+                    self.sections
+                        .handle_keys(key_event, &mut self.shell_client, &mut self.session_client)
+                        .await?
+                }
+            },
+            Event::Mouse(mouse_event) => self.sections.handle_mouse(mouse_event).await?,
+            _ => {}
+        }
+        Ok(())
+    }
     pub fn quit(&mut self) {
         self.running = false;
     }

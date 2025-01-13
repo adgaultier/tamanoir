@@ -4,8 +4,6 @@ pub mod event;
 
 pub mod tui;
 
-pub mod handler;
-
 pub mod grpc;
 
 pub mod section;

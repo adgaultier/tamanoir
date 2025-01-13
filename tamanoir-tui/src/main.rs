@@ -4,8 +4,7 @@ use clap::Parser;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tamanoir_tui::{
     app::{App, AppResult},
-    event::{Event, EventHandler},
-    handler::handle_key_events,
+    event::EventHandler,
     tui::Tui,
 };
 
@@ -32,12 +31,9 @@ async fn main() -> AppResult<()> {
 
     while app.running {
         tui.draw(&mut app)?;
-
-        if let Event::Key(key_event) = tui.events.next().await? {
-            handle_key_events(key_event, &mut app).await?
-        }
+        let event = tui.events.next().await?;
+        app.handle_tui_event(event).await?;
     }
-
     tui.exit()?;
     Ok(())
 }

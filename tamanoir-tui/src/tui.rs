@@ -1,7 +1,7 @@
 use std::{io, panic};
 
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
+    event::EnableMouseCapture,
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{backend::Backend, Terminal};
@@ -44,7 +44,7 @@ impl<B: Backend> Tui<B> {
 
     fn reset() -> AppResult<()> {
         terminal::disable_raw_mode()?;
-        crossterm::execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+        crossterm::execute!(io::stdout(), LeaveAlternateScreen, EnableMouseCapture)?;
         Ok(())
     }
 
