@@ -23,7 +23,7 @@ message SessionResponse {
   string first_packet =4;
   string latest_packet=5;
   uint32 n_packets=6;
-  string keyboard_layout=7;
+  uint32 keyboard_layout=7;
 }
 message SetSessionRceRequest {
   string ip=1;

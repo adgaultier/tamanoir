@@ -2,7 +2,7 @@ use std::{fmt, str::FromStr};
 
 use serde::Deserialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Layout {
     Qwerty = 0,
     Azerty = 1,

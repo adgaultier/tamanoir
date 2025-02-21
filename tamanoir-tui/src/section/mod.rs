@@ -32,7 +32,7 @@ pub enum FocusedSection {
 pub struct Sections {
     pub focused_section: FocusedSection,
     pub shell_section: Shell,
-    pub keylogger_section: keylogger::KeyLoggerSection,
+
     pub session_section: session::SessionSection,
     pub shell_percentage_split: Option<u16>,
 }
@@ -47,7 +47,7 @@ impl Sections {
         Ok(Self {
             focused_section: FocusedSection::Sessions,
             shell_section: Shell::new(shell_history),
-            keylogger_section: keylogger::KeyLoggerSection::new(),
+
             session_section: session::SessionSection::new(sessions, session_client, rce_client)
                 .await?,
             shell_percentage_split: None,
@@ -160,7 +160,7 @@ impl Sections {
                 }
             }
         };
-        self.keylogger_section.render(
+        keylogger::render(
             frame,
             keylogger_block,
             &mut self.session_section.selected_session,
