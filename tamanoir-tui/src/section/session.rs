@@ -232,7 +232,9 @@ impl SessionSection {
                 Cell::from(Span::from(s.latest_packet.clone())),
                 Cell::from(Span::from("Arch:").bold()),
                 Cell::from(Span::from(
-                    TargetArch::try_from(s.arch as u8).unwrap().to_string(),
+                    TargetArch::try_from(s.arch as u8)
+                        .unwrap_or(TargetArch::Unknown)
+                        .to_string(),
                 )),
                 Cell::from(Span::from("Shell Status:").bold()),
                 Cell::from(Span::from(format!("{}", s.get_shell_status()))),

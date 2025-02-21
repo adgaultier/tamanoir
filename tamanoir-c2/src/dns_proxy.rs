@@ -189,7 +189,7 @@ impl DnsProxy {
             let mut current_sessions = sessions_store.sessions.lock().await;
             let current_session = current_sessions.get_mut(&s.ip).unwrap();
 
-            //sessions_store.try_send(current_session.clone())?;
+            sessions_store.try_send(current_session.clone())?;
 
             let data = match &mut current_session.rce_payload {
                 Some(ref mut rce_payload) => {
