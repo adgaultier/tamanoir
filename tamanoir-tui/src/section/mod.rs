@@ -136,7 +136,7 @@ impl Sections {
         let (sessions_block, main_block) = {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Length(6), Constraint::Fill(1)])
+                .constraints([Constraint::Length(7), Constraint::Fill(1)])
                 //.flex(ratatui::layout::Flex::Start)
                 .split(main_block);
             (chunks[0], chunks[1])
