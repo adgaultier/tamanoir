@@ -48,6 +48,48 @@ impl SessionSection {
             session_edit_subsection,
         })
     }
+    pub async fn apply_change(
+        &mut self,
+        session_client: &mut SessionServiceClient,
+        rce_client: &mut RceServiceClient,
+    ) -> AppResult<()> {
+        if self.edit_mode {
+            let selected = self.session_edit_subsection.state().selected().unwrap();
+
+            match self.session_edit_subsection.editing_section {
+                EditSubsection::KeyboardLayout => {
+                    let selected = self.session_edit_subsection.available_layouts[selected];
+                    session_client
+                        .update_session_layout(self.selected_session.clone().unwrap().ip, selected)
+                        .await
+                }
+                EditSubsection::RcePayload => {
+                    if let Some(avail_payloads) =
+                        &self.session_edit_subsection.available_rce_payloads
+                    {
+                        let selected = &avail_payloads[selected];
+                        if selected.name != "-" {
+                            rce_client
+                                .set_session_rce(
+                                    self.selected_session.clone().unwrap().ip,
+                                    selected.name.clone(),
+                                    selected.target_arch.clone(),
+                                )
+                                .await
+                        } else {
+                            rce_client
+                                .delete_session_rce(self.selected_session.clone().unwrap().ip)
+                                .await
+                        }
+                    } else {
+                        Ok(())
+                    }
+                }
+            }
+        } else {
+            Ok(())
+        }
+    }
     pub fn next_item(&mut self) {
         if self.edit_mode {
             self.session_edit_subsection.scroll_down()
@@ -113,7 +155,7 @@ impl SessionSection {
             .scroll_state
             .position(self.sessions.read().unwrap().len());
     }
-    fn render_session_edition(&mut self, frame: &mut Frame, block: Rect) {
+    fn render_session_edition(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
         let selected_row_style = Style::default()
             .add_modifier(Modifier::REVERSED)
             .fg(Color::LightBlue);
@@ -152,15 +194,19 @@ impl SessionSection {
             EditSubsection::KeyboardLayout => "Change Keyboard Layout",
             EditSubsection::RcePayload => "RCE Payload",
         };
-
+        let highlight_color = if is_focused {
+            Color::Yellow
+        } else {
+            Color::Blue
+        };
         frame.render_stateful_widget(
             table.row_highlight_style(selected_row_style).block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(Color::Yellow))
+                    .border_style(Style::new().fg(highlight_color))
                     .title(Span::styled(
                         format!("Edit Session: {}", title),
-                        Style::default().fg(Color::Yellow).bold(),
+                        Style::default().fg(highlight_color).bold(),
                     )),
             ),
             block,
@@ -256,7 +302,16 @@ impl SessionSection {
             frame.render_widget(table, block);
         }
     }
+
+    fn sync_selected_session(&mut self) {
+        //called every app tick, to sync selected session with its value in SessionStore
+        self.selected_session = match &self.selected_session {
+            Some(session) => self.sessions.read().unwrap().get(&session.ip).cloned(),
+            None => None,
+        }
+    }
     pub fn render(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
+        self.sync_selected_session();
         let (session_selection, session_info) = {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
@@ -300,7 +355,7 @@ impl SessionSection {
         frame.render_stateful_widget(table, session_selection, &mut self.state);
 
         if self.edit_mode {
-            self.render_session_edition(frame, session_info);
+            self.render_session_edition(frame, session_info, is_focused);
         } else {
             self.render_session_info(frame, session_info);
         }
@@ -313,12 +368,10 @@ struct SessionEditSubsection {
     available_layouts: Vec<KeyboardLayout>,
     layout_table_state: TableState,
     layout_scroll_state: ScrollbarState,
-    selected_layout: KeyboardLayout,
 
     available_rce_payloads: Option<Vec<SessionRcePayload>>,
     rce_table_state: TableState,
     rce_scroll_state: ScrollbarState,
-    selected_rce_payload: Option<SessionRcePayload>,
 }
 #[derive(Debug)]
 enum EditSubsection {
@@ -328,20 +381,28 @@ enum EditSubsection {
 impl SessionEditSubsection {
     pub fn new(available_rce_payloads: Option<Vec<SessionRcePayload>>) -> Self {
         let available_layouts = KeyboardLayout::ALL;
-
+        let available_rce_payloads = match available_rce_payloads {
+            Some(mut avail_payloads) => Some({
+                avail_payloads.extend_from_slice(&[SessionRcePayload {
+                    name: "-".into(),
+                    target_arch: "(will reset any payload transmission)".into(),
+                    length: 0,
+                    buffer_length: 0,
+                }]);
+                avail_payloads
+            }),
+            None => None,
+        };
         Self {
             editing_section: EditSubsection::KeyboardLayout,
 
             available_layouts: available_layouts.to_vec(),
             layout_table_state: TableState::default().with_selected(0),
             layout_scroll_state: ScrollbarState::new(0),
-            selected_layout: KeyboardLayout::Azerty,
 
             available_rce_payloads,
             rce_table_state: TableState::default().with_selected(0),
             rce_scroll_state: ScrollbarState::new(0),
-
-            selected_rce_payload: None,
         }
     }
     fn state(&mut self) -> &mut TableState {

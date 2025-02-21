@@ -61,7 +61,7 @@ impl Sections {
                 Span::from(" Nav"),
                 Span::from(" | "),
                 Span::from("Ctrl + s:").bold(),
-                Span::from(" (De)Activate Shell"),
+                Span::from(" (Un)Toggle Shell"),
             ];
 
             match self.focused_section {
@@ -86,8 +86,18 @@ impl Sections {
                     base_message.extend([
                         Span::from(" | "),
                         Span::from("e:").bold().yellow(),
-                        Span::from(" Edit").yellow(),
+                        Span::from(" (Un)Edit").yellow(),
                     ]);
+                    if self.session_section.edit_mode {
+                        base_message.extend([
+                            Span::from(" | "),
+                            Span::from("󰹳 :").bold().yellow(),
+                            Span::from(" Switch Edit Section").yellow(),
+                            Span::from(" | "),
+                            Span::from("󱁐 :").bold().yellow(),
+                            Span::from(" Apply Change").yellow(),
+                        ]);
+                    }
                 }
                 _ => {}
             }
@@ -197,7 +207,8 @@ impl Sections {
         &mut self,
         key_event: KeyEvent,
         shell_client: &mut RemoteShellServiceClient,
-        _session_client: &mut SessionServiceClient,
+        session_client: &mut SessionServiceClient,
+        rce_client: &mut RceServiceClient,
     ) -> AppResult<()> {
         match key_event.code {
             KeyCode::Tab => match self.focused_section {
@@ -263,7 +274,12 @@ impl Sections {
                         self.session_section.previous_edit_section()
                     }
                     KeyCode::Char('l') | KeyCode::Right => self.session_section.next_edit_section(),
-
+                    KeyCode::Char(' ') if self.session_section.edit_mode => {
+                        let _ = self
+                            .session_section
+                            .apply_change(session_client, rce_client)
+                            .await?;
+                    }
                     _ => {}
                 },
                 FocusedSection::KeyLogger => match key_event.code {

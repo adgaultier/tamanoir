@@ -25,6 +25,7 @@ pub struct App {
     pub sections: Sections,
     pub shell_client: RemoteShellServiceClient,
     pub session_client: SessionServiceClient,
+    pub rce_client: RceServiceClient,
 }
 
 impl App {
@@ -40,7 +41,7 @@ impl App {
         let mut shell_receiver = shell_client.clone();
         let mut session_receiver = session_client.clone();
 
-        let mut sections = Sections::new(
+        let sections = Sections::new(
             shell_history.clone(),
             sessions.clone(),
             &mut session_client,
@@ -61,6 +62,7 @@ impl App {
             sections,
             shell_client,
             session_client,
+            rce_client,
         })
     }
     pub async fn handle_tui_event(&mut self, event: Event) -> AppResult<()> {
@@ -73,7 +75,12 @@ impl App {
                 }
                 _ => {
                     self.sections
-                        .handle_keys(key_event, &mut self.shell_client, &mut self.session_client)
+                        .handle_keys(
+                            key_event,
+                            &mut self.shell_client,
+                            &mut self.session_client,
+                            &mut self.rce_client,
+                        )
                         .await?
                 }
             },

