@@ -44,9 +44,10 @@ pub struct Session {
     pub latest_packet: DateTime<Utc>,
     pub n_packets: usize,
     pub keyboard_layout: Layout,
+    pub arch: TargetArch,
 }
 impl Session {
-    pub fn new(sock_addr: SocketAddr) -> Option<Self> {
+    pub fn new(sock_addr: SocketAddr, arch: TargetArch) -> Option<Self> {
         let now_utc = Utc::now();
         match sock_addr {
             SocketAddr::V4(addr) => Some(Session {
@@ -57,6 +58,7 @@ impl Session {
                 latest_packet: now_utc,
                 n_packets: 1,
                 keyboard_layout: Layout::Azerty,
+                arch,
             }),
             _ => None,
         }

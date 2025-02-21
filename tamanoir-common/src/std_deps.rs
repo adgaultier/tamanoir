@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use serde::Deserialize;
+use crate::TargetArch;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Layout {
@@ -33,11 +33,6 @@ impl std::fmt::Display for Layout {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub enum TargetArch {
-    X86_64,
-    Aarch64,
-}
 #[derive(Debug, Clone, PartialEq)]
 pub enum Engine {
     Docker,
@@ -51,6 +46,7 @@ impl fmt::Display for TargetArch {
         match self {
             TargetArch::X86_64 => write!(f, "x86_64"),
             TargetArch::Aarch64 => write!(f, "aarch64"),
+            TargetArch::Unknown => write!(f, "?"),
         }
     }
 }
@@ -82,6 +78,18 @@ impl FromStr for TargetArch {
             "x86_64" => Ok(TargetArch::X86_64),
             "aarch64" => Ok(TargetArch::Aarch64),
             _ => Err(format!("{} arch isn't implmented", s)),
+        }
+    }
+}
+
+impl TryFrom<u8> for TargetArch {
+    type Error = String;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::X86_64),
+            1 => Ok(Self::Aarch64),
+            _ => Err(format!("{} arch enum not recognized ", value)),
         }
     }
 }

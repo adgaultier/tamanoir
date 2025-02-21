@@ -15,7 +15,7 @@ pub static TARGET_IP: u32 = 0;
 pub static HIJACK_IP: u32 = 0;
 
 #[no_mangle]
-pub static KEYBOARD_LAYOUT: u8 = 0;
+pub static ARCH: u8 = 0;
 
 pub const IP_OFFSET: usize = EthHdr::LEN;
 pub const IP_TOT_LEN_OFFSET: usize = IP_OFFSET + 2;
@@ -32,11 +32,11 @@ pub const BPF_ADJ_ROOM_NET: u32 = 0;
 pub const KEYS_PAYLOAD_LEN: usize = 8;
 pub const DNS_PAYLOAD_MAX_LEN: usize = 128;
 
-//TODO: define keyboard layout as enum
+//TODO: define host arch as enum
 #[derive(Default, Copy, Clone)]
 #[repr(C)]
 pub struct KeyEvent {
-    pub layout: u8, // 0:qwerty 1: azerty
+    pub arch: u8, // 0:x86_64, 1: aarch64,  2: other
     pub key: u8,
 }
 #[map]
