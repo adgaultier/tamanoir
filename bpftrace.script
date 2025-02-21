@@ -1,0 +1,8 @@
+#!/usr/bin/env bpftrace
+
+uprobe:/lib/x86_64-linux-gnu/libsystemd.so.0.38.0:sd_bus_message_new_method_call
+{
+    if (str(arg2) == "org.freedesktop.systemd1" && str(arg3) == "ListUnits") {
+        printf("Detected ListUnits call from PID %d\n", pid);
+    }
+}

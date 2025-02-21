@@ -1,4 +1,3 @@
-use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -6,11 +5,12 @@ use ratatui::{
     widgets::{Block, BorderType, Cell, HighlightSpacing, Row, ScrollbarState, Table, TableState},
     Frame,
 };
+use tamanoir_common::Layout as KeyboardLayout;
 
 use crate::{
     app::{AppResult, SessionsMap},
-    grpc::SessionServiceClient,
-    tamanoir_grpc::SessionResponse,
+    grpc::{RceServiceClient, SessionServiceClient},
+    tamanoir_grpc::{SessionRcePayload, SessionResponse},
 };
 
 #[derive(Debug)]
@@ -19,6 +19,8 @@ pub struct SessionSection {
     state: TableState,
     scroll_state: ScrollbarState,
     pub selected_session: Option<SessionResponse>,
+    pub edit_mode: bool,
+    session_edit_subsection: SessionEditSubsection,
 }
 
 fn compute_payload_tx_pct(total_len: u32, remaining_len: u32) -> u8 {
@@ -26,25 +28,51 @@ fn compute_payload_tx_pct(total_len: u32, remaining_len: u32) -> u8 {
 }
 
 impl SessionSection {
-    pub fn new(sessions: SessionsMap) -> Self {
-        Self {
+    pub async fn new(
+        sessions: SessionsMap,
+        session_client: &mut SessionServiceClient,
+        rce_client: &mut RceServiceClient,
+    ) -> AppResult<Self> {
+        for s in session_client.list_sessions().await? {
+            sessions.write().unwrap().insert(s.ip.clone(), s);
+        }
+        let selected_session = sessions.read().unwrap().values().nth(0).cloned();
+        let available_rce_payloads = Some(rce_client.list_available_rce().await?);
+        let session_edit_subsection = SessionEditSubsection::new(available_rce_payloads);
+        Ok(Self {
             sessions,
             state: TableState::default().with_selected(0),
             scroll_state: ScrollbarState::new(0),
-
-            selected_session: None,
+            selected_session,
+            edit_mode: false,
+            session_edit_subsection,
+        })
+    }
+    pub fn next_item(&mut self) {
+        if self.edit_mode {
+            self.session_edit_subsection.scroll_down()
+        } else {
+            self.scroll_down()
         }
     }
-
-    pub async fn init(&mut self, client: &mut SessionServiceClient) -> AppResult<()> {
-        for s in client.list_sessions().await? {
-            self.sessions.write().unwrap().insert(s.ip.clone(), s);
+    pub fn previous_item(&mut self) {
+        if self.edit_mode {
+            self.session_edit_subsection.scroll_up()
+        } else {
+            self.scroll_up()
         }
-        self.selected_session = self.sessions.read().unwrap().values().nth(0).cloned();
-        Ok(())
     }
-
-    pub fn next_row(&mut self) {
+    pub fn next_edit_section(&mut self) {
+        if self.edit_mode {
+            self.session_edit_subsection.next_edit_section()
+        }
+    }
+    pub fn previous_edit_section(&mut self) {
+        if self.edit_mode {
+            self.session_edit_subsection.previous_edit_section()
+        }
+    }
+    pub fn scroll_down(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.sessions.read().unwrap().len() - 1 {
@@ -64,7 +92,7 @@ impl SessionSection {
         };
     }
 
-    pub fn previous_row(&mut self) {
+    pub fn scroll_up(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
@@ -85,52 +113,68 @@ impl SessionSection {
             .scroll_state
             .position(self.sessions.read().unwrap().len());
     }
-
-    pub fn render(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
-        let (session_selection, session_info) = {
-            let chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Length(18), Constraint::Fill(1)])
-                .flex(ratatui::layout::Flex::SpaceBetween)
-                .split(block);
-            (chunks[0], chunks[1])
-        };
+    fn render_session_edition(&mut self, frame: &mut Frame, block: Rect) {
         let selected_row_style = Style::default()
             .add_modifier(Modifier::REVERSED)
             .fg(Color::LightBlue);
+        let table = match self.session_edit_subsection.editing_section {
+            EditSubsection::KeyboardLayout => {
+                let header = Row::new([Span::from("Keyboard Layout").bold()]);
+                let rows: Vec<Row> = self
+                    .session_edit_subsection
+                    .available_layouts
+                    .clone()
+                    .into_iter()
+                    .map(|l| Row::new([Span::from(format!("{}", l))]))
+                    .collect();
+                Table::new(rows, [Constraint::Fill(1)]).header(header)
+            }
+            EditSubsection::RcePayload => {
+                let header =
+                    Row::new([Span::from("Name").bold(), Span::from("Target Arch").bold()]);
 
-        let reader = self.sessions.read().unwrap();
-
-        let rows = reader
-            .iter()
-            .map(|(k, _)| Row::new([Cell::from(k.clone())]).style(Style::new().fg(Color::White)));
-
-        let highlight_color = if is_focused {
-            Color::Yellow
-        } else {
-            Color::Blue
+                let rows: Vec<Row> = match &self.session_edit_subsection.available_rce_payloads {
+                    Some(payloads) => payloads
+                        .into_iter()
+                        .map(|p| {
+                            Row::new([
+                                Span::from(p.name.clone()),
+                                Span::from(p.target_arch.clone()),
+                            ])
+                        })
+                        .collect(),
+                    None => vec![],
+                };
+                Table::new(rows, [Constraint::Fill(1), Constraint::Fill(1)]).header(header)
+            }
         };
-        let table: Table<'_> = Table::new(rows, vec![Constraint::Percentage(100)])
-            .row_highlight_style(selected_row_style)
-            .highlight_spacing(HighlightSpacing::Never)
-            .block(
+        let title = match self.session_edit_subsection.editing_section {
+            EditSubsection::KeyboardLayout => "Change Keyboard Layout",
+            EditSubsection::RcePayload => "RCE Payload",
+        };
+
+        frame.render_stateful_widget(
+            table.row_highlight_style(selected_row_style).block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(highlight_color))
+                    .border_style(Style::new().fg(Color::Yellow))
                     .title(Span::styled(
-                        "Current Sessions",
-                        Style::default().fg(highlight_color).bold(),
+                        format!("Edit Session: {}", title),
+                        Style::default().fg(Color::Yellow).bold(),
                     )),
-            );
-
-        frame.render_stateful_widget(table, session_selection, &mut self.state);
+            ),
+            block,
+            self.session_edit_subsection.state(),
+        );
+    }
+    fn render_session_info(&self, frame: &mut Frame, block: Rect) {
         if let Some(s) = &self.selected_session {
             let (stats, rce) = {
                 let chunks = Layout::default()
                     .direction(Direction::Horizontal)
                     .constraints([Constraint::Fill(1), Constraint::Fill(1)])
                     .flex(ratatui::layout::Flex::SpaceBetween)
-                    .split(session_info);
+                    .split(block);
                 (chunks[0], chunks[1])
             };
             let cells_stats = vec![
@@ -209,17 +253,164 @@ impl SessionSection {
                     )),
             );
 
-            frame.render_widget(table, session_info);
+            frame.render_widget(table, block);
+        }
+    }
+    pub fn render(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
+        let (session_selection, session_info) = {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Length(18), Constraint::Fill(1)])
+                .flex(ratatui::layout::Flex::SpaceBetween)
+                .split(block);
+            (chunks[0], chunks[1])
         };
+        let selected_row_style = Style::default()
+            .add_modifier(Modifier::REVERSED)
+            .fg(Color::LightBlue);
+
+        let rows: Vec<Row> = {
+            let reader = self.sessions.read().unwrap();
+            reader
+                .iter()
+                .map(|(k, _)| {
+                    Row::new([Cell::from(k.clone())]).style(Style::new().fg(Color::White))
+                })
+                .collect()
+        };
+
+        let highlight_color = if is_focused && !self.edit_mode {
+            Color::Yellow
+        } else {
+            Color::Blue
+        };
+        let table: Table<'_> = Table::new(rows, vec![Constraint::Percentage(100)])
+            .row_highlight_style(selected_row_style)
+            .highlight_spacing(HighlightSpacing::Never)
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::new().fg(highlight_color))
+                    .title(Span::styled(
+                        "Current Sessions",
+                        Style::default().fg(highlight_color).bold(),
+                    )),
+            );
+
+        frame.render_stateful_widget(table, session_selection, &mut self.state);
+
+        if self.edit_mode {
+            self.render_session_edition(frame, session_info);
+        } else {
+            self.render_session_info(frame, session_info);
+        }
+    }
+}
+#[derive(Debug)]
+struct SessionEditSubsection {
+    editing_section: EditSubsection,
+
+    available_layouts: Vec<KeyboardLayout>,
+    layout_table_state: TableState,
+    layout_scroll_state: ScrollbarState,
+    selected_layout: KeyboardLayout,
+
+    available_rce_payloads: Option<Vec<SessionRcePayload>>,
+    rce_table_state: TableState,
+    rce_scroll_state: ScrollbarState,
+    selected_rce_payload: Option<SessionRcePayload>,
+}
+#[derive(Debug)]
+enum EditSubsection {
+    KeyboardLayout,
+    RcePayload,
+}
+impl SessionEditSubsection {
+    pub fn new(available_rce_payloads: Option<Vec<SessionRcePayload>>) -> Self {
+        let available_layouts = KeyboardLayout::ALL;
+
+        Self {
+            editing_section: EditSubsection::KeyboardLayout,
+
+            available_layouts: available_layouts.to_vec(),
+            layout_table_state: TableState::default().with_selected(0),
+            layout_scroll_state: ScrollbarState::new(0),
+            selected_layout: KeyboardLayout::Azerty,
+
+            available_rce_payloads,
+            rce_table_state: TableState::default().with_selected(0),
+            rce_scroll_state: ScrollbarState::new(0),
+
+            selected_rce_payload: None,
+        }
+    }
+    fn state(&mut self) -> &mut TableState {
+        match self.editing_section {
+            EditSubsection::KeyboardLayout => &mut self.layout_table_state,
+            EditSubsection::RcePayload => &mut self.rce_table_state,
+        }
+    }
+    fn scroll_state(&mut self) -> &mut ScrollbarState {
+        match self.editing_section {
+            EditSubsection::KeyboardLayout => &mut self.layout_scroll_state,
+            EditSubsection::RcePayload => &mut self.rce_scroll_state,
+        }
     }
 
-    pub async fn handle_keys(&mut self, key_event: KeyEvent) -> AppResult<()> {
-        match key_event.code {
-            KeyCode::Enter => {}
-            KeyCode::Char('j') | KeyCode::Down => self.next_row(),
-            KeyCode::Char('k') | KeyCode::Up => self.previous_row(),
-            _ => {}
+    fn n_options(&self) -> usize {
+        match self.editing_section {
+            EditSubsection::KeyboardLayout => self.available_layouts.len(),
+            EditSubsection::RcePayload => {
+                if let Some(payloads_list) = &self.available_rce_payloads {
+                    payloads_list.len()
+                } else {
+                    0
+                }
+            }
         }
-        Ok(())
+    }
+    fn next_edit_section(&mut self) {
+        self.editing_section = match self.editing_section {
+            EditSubsection::KeyboardLayout => EditSubsection::RcePayload,
+            EditSubsection::RcePayload => EditSubsection::KeyboardLayout,
+        }
+    }
+    fn previous_edit_section(&mut self) {
+        self.next_edit_section()
+    }
+    pub fn scroll_down(&mut self) {
+        let n_options = self.n_options().clone();
+        let state = self.state();
+        let i = match state.selected() {
+            Some(i) => {
+                if i < n_options - 1 {
+                    i + 1
+                } else {
+                    i
+                }
+            }
+            None => 0,
+        };
+
+        state.select(Some(i));
+        let scroll_state = self.scroll_state();
+        *scroll_state = scroll_state.position(i);
+    }
+    pub fn scroll_up(&mut self) {
+        let state = self.state();
+        let i = match state.selected() {
+            Some(i) => {
+                if i > 1 {
+                    i - 1
+                } else {
+                    0
+                }
+            }
+            None => 0,
+        };
+
+        state.select(Some(i));
+        let scroll_state = self.scroll_state();
+        *scroll_state = scroll_state.position(i);
     }
 }

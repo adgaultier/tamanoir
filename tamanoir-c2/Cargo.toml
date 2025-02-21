@@ -20,7 +20,7 @@ tempfile = "3"
 home = "0.5.11"
 env_logger = { version = "0.11", default-features = false }
 log = { version = "0.4", default-features = false }
-tamanoir-common = { path = "../tamanoir-common" }
+tamanoir-common = { path = "../tamanoir-common",features= ["std"] }
 tonic = "0.12"
 prost = "0.13"
 tonic-types = "0.12"

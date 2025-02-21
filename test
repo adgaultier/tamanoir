@@ -1,0 +1,659 @@
+execve("/usr/bin/systemctl", ["systemctl", "list-unit-files", "--type=service", "--all"], 0x7ffd0ea50d78 /* 79 vars */) = 0
+brk(NULL)                               = 0x627f2ff84000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7c711ccdd000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/glibc-hwcaps/x86-64-v3/libcap.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/glibc-hwcaps/x86-64-v3/", 0x7ffe67b56230, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/glibc-hwcaps/x86-64-v2/libcap.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/glibc-hwcaps/x86-64-v2/", 0x7ffe67b56230, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libcap.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=114491, ...}) = 0
+mmap(NULL, 114491, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7c711ccc1000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libcap.so.2", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\340\201\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=51536, ...}) = 0
+mmap(NULL, 49224, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711ccb4000
+mmap(0x7c711ccb7000, 24576, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7c711ccb7000
+mmap(0x7c711ccbd000, 8192, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x9000) = 0x7c711ccbd000
+mmap(0x7c711ccbf000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xb000) = 0x7c711ccbf000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/liblz4.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/liblz4.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=137440, ...}) = 0
+mmap(NULL, 135264, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711cc92000
+mmap(0x7c711cc95000, 110592, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7c711cc95000
+mmap(0x7c711ccb0000, 8192, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1e000) = 0x7c711ccb0000
+mmap(0x7c711ccb2000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x20000) = 0x7c711ccb2000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libselinux.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libselinux.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=174472, ...}) = 0
+mmap(NULL, 181960, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711cc65000
+mmap(0x7c711cc6b000, 118784, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x6000) = 0x7c711cc6b000
+mmap(0x7c711cc88000, 24576, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x23000) = 0x7c711cc88000
+mmap(0x7c711cc8e000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x29000) = 0x7c711cc8e000
+mmap(0x7c711cc90000, 5832, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7c711cc90000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/liblzma.so.5", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/liblzma.so.5", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=202904, ...}) = 0
+mmap(NULL, 200728, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711cc33000
+mmap(0x7c711cc36000, 139264, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7c711cc36000
+mmap(0x7c711cc58000, 45056, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x25000) = 0x7c711cc58000
+mmap(0x7c711cc63000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x30000) = 0x7c711cc63000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libzstd.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libzstd.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=755864, ...}) = 0
+mmap(NULL, 757816, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711cb79000
+mmap(0x7c711cb7d000, 684032, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4000) = 0x7c711cb7d000
+mmap(0x7c711cc24000, 53248, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xab000) = 0x7c711cc24000
+mmap(0x7c711cc31000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xb7000) = 0x7c711cc31000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libm.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=952616, ...}) = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7c711cb77000
+mmap(NULL, 950296, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711ca8e000
+mmap(0x7c711ca9e000, 520192, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x10000) = 0x7c711ca9e000
+mmap(0x7c711cb1d000, 360448, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8f000) = 0x7c711cb1d000
+mmap(0x7c711cb75000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe7000) = 0x7c711cb75000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libblkid.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libblkid.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=236592, ...}) = 0
+mmap(NULL, 238520, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711ca53000
+mmap(0x7c711ca5a000, 147456, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x7000) = 0x7c711ca5a000
+mmap(0x7c711ca7e000, 36864, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2b000) = 0x7c711ca7e000
+mmap(0x7c711ca87000, 28672, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x33000) = 0x7c711ca87000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libgcrypt.so.20", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libgcrypt.so.20", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=1340976, ...}) = 0
+mmap(NULL, 1340272, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711c90b000
+mmap(0x7c711c91a000, 999424, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xf000) = 0x7c711c91a000
+mmap(0x7c711ca0e000, 241664, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x103000) = 0x7c711ca0e000
+mmap(0x7c711ca49000, 36864, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x13e000) = 0x7c711ca49000
+mmap(0x7c711ca52000, 880, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7c711ca52000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libmount.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libmount.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=309960, ...}) = 0
+mmap(NULL, 311896, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711c8be000
+mmap(0x7c711c8c7000, 212992, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x9000) = 0x7c711c8c7000
+mmap(0x7c711c8fb000, 53248, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3d000) = 0x7c711c8fb000
+mmap(0x7c711c908000, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x49000) = 0x7c711c908000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libcrypto.so.3", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libcrypto.so.3", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=5305304, ...}) = 0
+mmap(NULL, 5319632, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711c200000
+mmap(0x7c711c2b3000, 3354624, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xb3000) = 0x7c711c2b3000
+mmap(0x7c711c5e6000, 831488, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3e6000) = 0x7c711c5e6000
+mmap(0x7c711c6b1000, 389120, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4b0000) = 0x7c711c6b1000
+mmap(0x7c711c710000, 11216, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7c711c710000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/systemd/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711be00000
+mmap(0x7c711be28000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7c711be28000
+mmap(0x7c711bfb0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x7c711bfb0000
+mmap(0x7c711bfff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x7c711bfff000
+mmap(0x7c711c005000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7c711c005000
+close(3)                                = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7c711c8bc000
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libpcre2-8.so.0", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=625344, ...}) = 0
+mmap(NULL, 627472, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711c822000
+mmap(0x7c711c824000, 450560, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7c711c824000
+mmap(0x7c711c892000, 163840, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x70000) = 0x7c711c892000
+mmap(0x7c711c8ba000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x97000) = 0x7c711c8ba000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libgpg-error.so.0", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=149760, ...}) = 0
+mmap(NULL, 147880, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c711c7fd000
+mmap(0x7c711c801000, 90112, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4000) = 0x7c711c801000
+mmap(0x7c711c817000, 36864, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1a000) = 0x7c711c817000
+mmap(0x7c711c820000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x23000) = 0x7c711c820000
+close(3)                                = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7c711c7fb000
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7c711c7f8000
+arch_prctl(ARCH_SET_FS, 0x7c711c7f88c0) = 0
+set_tid_address(0x7c711c7f8b90)         = 136632
+set_robust_list(0x7c711c7f8ba0, 24)     = 0
+rseq(0x7c711c7f91e0, 0x20, 0, 0x53053053) = 0
+mprotect(0x7c711bfff000, 16384, PROT_READ) = 0
+mprotect(0x7c711c820000, 4096, PROT_READ) = 0
+mprotect(0x7c711c8ba000, 4096, PROT_READ) = 0
+mprotect(0x7c711c6b1000, 376832, PROT_READ) = 0
+mprotect(0x7c711ca87000, 24576, PROT_READ) = 0
+mprotect(0x7c711cc8e000, 4096, PROT_READ) = 0
+mprotect(0x7c711c908000, 8192, PROT_READ) = 0
+mprotect(0x7c711ca49000, 20480, PROT_READ) = 0
+mprotect(0x7c711cb75000, 4096, PROT_READ) = 0
+mprotect(0x7c711cc31000, 4096, PROT_READ) = 0
+mprotect(0x7c711cc63000, 4096, PROT_READ) = 0
+mprotect(0x7c711ccb2000, 4096, PROT_READ) = 0
+mprotect(0x7c711ccbf000, 4096, PROT_READ) = 0
+mprotect(0x627ef9f28000, 65536, PROT_READ) = 0
+mprotect(0x7c711cd15000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x7c711ccc1000, 114491)          = 0
+getrandom("\x44\xcd\x46\xfe\x7b\x08\xbf\xa0", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x627f2ff84000
+brk(0x627f2ffa5000)                     = 0x627f2ffa5000
+statfs("/sys/fs/selinux", 0x7ffe67b56fe0) = -1 ENOENT (No such file or directory)
+statfs("/selinux", 0x7ffe67b56fe0)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/proc/filesystems", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+read(3, "nodev\tsysfs\nnodev\ttmpfs\nnodev\tbd"..., 1024) = 407
+read(3, "", 1024)                       = 0
+close(3)                                = 0
+access("/etc/selinux/config", F_OK)     = -1 ENOENT (No such file or directory)
+prctl(PR_CAPBSET_READ, CAP_MAC_OVERRIDE) = 1
+prctl(PR_CAPBSET_READ, 0x30 /* CAP_??? */) = -1 EINVAL (Invalid argument)
+prctl(PR_CAPBSET_READ, CAP_CHECKPOINT_RESTORE) = 1
+prctl(PR_CAPBSET_READ, 0x2c /* CAP_??? */) = -1 EINVAL (Invalid argument)
+prctl(PR_CAPBSET_READ, 0x2a /* CAP_??? */) = -1 EINVAL (Invalid argument)
+prctl(PR_CAPBSET_READ, 0x29 /* CAP_??? */) = -1 EINVAL (Invalid argument)
+openat(AT_FDCWD, "/usr/lib/locale/locale-archive", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=8328176, ...}) = 0
+mmap(NULL, 8328176, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7c711b600000
+close(3)                                = 0
+getpid()                                = 136632
+fstat(2, {st_mode=S_IFREG|0664, st_size=14982, ...}) = 0
+prlimit64(0, RLIMIT_NOFILE, {rlim_cur=512*1024, rlim_max=512*1024}, NULL) = 0
+rt_sigaction(SIGBUS, {sa_handler=0x627ef9e54e90, sa_mask=[], sa_flags=SA_RESTORER|SA_SIGINFO, sa_restorer=0x7c711be45320}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+openat(AT_FDCWD, "/proc/", O_RDONLY|O_NOCTTY|O_CLOEXEC|O_PATH) = 3
+fstatfs(3, {f_type=PROC_SUPER_MAGIC, f_bsize=4096, f_blocks=0, f_bfree=0, f_bavail=0, f_files=0, f_ffree=0, f_fsid={val=[0x18, 0]}, f_namelen=255, f_frsize=4096, f_flags=ST_VALID|ST_NOSUID|ST_NODEV|ST_NOEXEC|ST_RELATIME}) = 0
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/proc/1/root", 0x7ffe67b567f0, 0) = -1 EACCES (Permission denied)
+faccessat2(AT_FDCWD, "/run/systemd/system/", F_OK, AT_SYMLINK_NOFOLLOW) = 0
+faccessat2(AT_FDCWD, "/run/systemd/system/", F_OK, AT_SYMLINK_NOFOLLOW) = 0
+geteuid()                               = 1000
+getrandom("\x0b\xed\x74\xb4\x2d\xa9\x98\x87", 8, GRND_INSECURE) = 8
+futex(0x627ef9f38f00, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 3
+prctl(PR_GET_NAME, "systemctl")         = 0
+getrandom("\x8c\x7b\x98\x8d\xee\xae\xfd\x84", 8, GRND_INSECURE) = 8
+bind(3, {sa_family=AF_UNIX, sun_path=@"84fdaeee8d987b8c/bus/systemctl/system"}, 40) = 0
+getsockopt(3, SOL_SOCKET, SO_RCVBUF, [212992], [4]) = 0
+setsockopt(3, SOL_SOCKET, SO_RCVBUF, [8388608], 4) = 0
+getsockopt(3, SOL_SOCKET, SO_RCVBUF, [425984], [4]) = 0
+setsockopt(3, SOL_SOCKET, SO_RCVBUFFORCE, [8388608], 4) = -1 EPERM (Operation not permitted)
+getsockopt(3, SOL_SOCKET, SO_SNDBUF, [212992], [4]) = 0
+setsockopt(3, SOL_SOCKET, SO_SNDBUF, [8388608], 4) = 0
+getsockopt(3, SOL_SOCKET, SO_SNDBUF, [425984], [4]) = 0
+setsockopt(3, SOL_SOCKET, SO_SNDBUFFORCE, [8388608], 4) = -1 EPERM (Operation not permitted)
+connect(3, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, 30) = 0
+getsockopt(3, SOL_SOCKET, SO_PEERCRED, {pid=1, uid=0, gid=0}, [12]) = 0
+getsockopt(3, SOL_SOCKET, SO_PEERSEC, "unconfined", [64 => 10]) = 0
+getsockopt(3, SOL_SOCKET, SO_PEERGROUPS, 0x627f2ff87490, [256 => 0]) = 0
+getpeername(3, {sa_family=AF_UNIX, sun_path="/run/dbus/system_bus_socket"}, [127 => 30]) = 0
+fstat(3, {st_mode=S_IFSOCK|0777, st_size=0, ...}) = 0
+getsockopt(3, SOL_SOCKET, SO_ACCEPTCONN, [0], [4]) = 0
+getsockname(3, {sa_family=AF_UNIX, sun_path=@"84fdaeee8d987b8c/bus/systemctl/system"}, [128 => 40]) = 0
+sendmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\0AUTH EXTERNAL\r\nDATA\r\n", iov_len=22}, {iov_base="NEGOTIATE_UNIX_FD\r\n", iov_len=19}, {iov_base="BEGIN\r\n", iov_len=7}], msg_iovlen=3, msg_controllen=0, msg_flags=0}, MSG_DONTWAIT|MSG_NOSIGNAL) = 48
+getrandom("\xc4\x21\x9e\xc2\xbb\x07\x7a\xf4\xee\x1e\x85\x1f\xb5\x1c\x8a\x3e", 16, GRND_INSECURE) = 16
+futex(0x627ef9f39960, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+gettid()                                = 136632
+recvmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="DATA\r\nOK 2248da24947adee1a14aaf4"..., iov_len=256}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = 58
+sendmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\1\0\1\0\0\0\0\1\0\0\0m\0\0\0\1\1o\0\25\0\0\0/org/fre"..., iov_len=128}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, MSG_DONTWAIT|MSG_NOSIGNAL) = 128
+recvmsg(3, {msg_namelen=0}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = -1 EAGAIN (Resource temporarily unavailable)
+ppoll([{fd=3, events=POLLIN}], 1, {tv_sec=24, tv_nsec=999910000}, NULL, 8) = 1 ([{fd=3, revents=POLLIN}], left {tv_sec=24, tv_nsec=999577163})
+recvmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\2\1\1\v\0\0\0\1\0\0\0=\0\0\0\6\1s\0\6\0\0\0", iov_len=24}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = 24
+recvmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base=":1.494\0\0\5\1u\0\1\0\0\0\10\1g\0\1s\0\0\7\1s\0\24\0\0\0"..., iov_len=67}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = 67
+sendmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\1\4\1\10\0\0\0\2\0\0\0\252\0\0\0\1\1o\0\31\0\0\0/org/fre"..., iov_len=192}, {iov_base="\0\0\0\0\0\0\0\0", iov_len=8}], msg_iovlen=2, msg_controllen=0, msg_flags=0}, MSG_DONTWAIT|MSG_NOSIGNAL) = 200
+recvmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\4\1\1\v\0\0\0\2\0\0\0\215\0\0\0\1\1o\0\25\0\0\0", iov_len=24}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = 24
+recvmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="/org/freedesktop/DBus\0\0\0\2\1s\0\24\0\0\0"..., iov_len=147}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = 147
+recvmsg(3, {msg_namelen=0}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = -1 EAGAIN (Resource temporarily unavailable)
+ppoll([{fd=3, events=POLLIN}], 1, {tv_sec=24, tv_nsec=999861000}, NULL, 8) = 1 ([{fd=3, revents=POLLIN}], left {tv_sec=24, tv_nsec=391852403})
+recvmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\2\1\1\267r\0\0\3419\0\0005\0\0\0\5\1u\0\2\0\0\0", iov_len=24}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = 24
+recvmsg(3, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\6\1s\0\6\0\0\0:1.494\0\0\10\1g\0\5a(ss)\0\0\0\0\0\0"..., iov_len=29415}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_DONTWAIT|MSG_CMSG_CLOEXEC) = 29415
+ioctl(1, TCGETS, {c_iflag=ICRNL|IXON|IUTF8, c_oflag=NL0|CR0|XTABS|BS0|VT0|FF0|OPOST|ONLCR, c_cflag=B38400|CS8|CREAD, c_lflag=ISIG|ICANON|ECHO|IEXTEN|ECHOCTL|ECHOKE, ...}) = 0
+ioctl(2, TCGETS, 0x7ffe67b56840)        = -1 ENOTTY (Inappropriate ioctl for device)
+newfstatat(AT_FDCWD, "/dev/null", {st_mode=S_IFCHR|0666, st_rdev=makedev(0x1, 0x3), ...}, 0) = 0
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0x6), ...}) = 0
+fstat(2, {st_mode=S_IFREG|0664, st_size=20885, ...}) = 0
+openat(AT_FDCWD, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 4
+statx(4, ".", AT_STATX_SYNC_AS_STAT, STATX_TYPE|STATX_INO|STATX_MNT_ID, {stx_mask=STATX_BASIC_STATS|STATX_MNT_ID, stx_attributes=STATX_ATTR_MOUNT_ROOT, stx_mode=S_IFDIR|0755, stx_size=4096, ...}) = 0
+statx(4, "..", AT_STATX_SYNC_AS_STAT, STATX_TYPE|STATX_INO|STATX_MNT_ID, {stx_mask=STATX_BASIC_STATS|STATX_MNT_ID, stx_attributes=STATX_ATTR_MOUNT_ROOT, stx_mode=S_IFDIR|0755, stx_size=4096, ...}) = 0
+openat(4, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 5
+fstat(5, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+openat(AT_FDCWD, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 6
+openat(5, "etc", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 7
+fstat(7, {st_mode=S_IFDIR|0755, st_size=12288, ...}) = 0
+close(5)                                = 0
+openat(7, "systemd", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 5
+fstat(5, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+close(7)                                = 0
+openat(5, "system-preset", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = -1 ENOENT (No such file or directory)
+close(6)                                = 0
+close(5)                                = 0
+close(4)                                = 0
+openat(AT_FDCWD, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 4
+statx(4, ".", AT_STATX_SYNC_AS_STAT, STATX_TYPE|STATX_INO|STATX_MNT_ID, {stx_mask=STATX_BASIC_STATS|STATX_MNT_ID, stx_attributes=STATX_ATTR_MOUNT_ROOT, stx_mode=S_IFDIR|0755, stx_size=4096, ...}) = 0
+statx(4, "..", AT_STATX_SYNC_AS_STAT, STATX_TYPE|STATX_INO|STATX_MNT_ID, {stx_mask=STATX_BASIC_STATS|STATX_MNT_ID, stx_attributes=STATX_ATTR_MOUNT_ROOT, stx_mode=S_IFDIR|0755, stx_size=4096, ...}) = 0
+openat(4, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 5
+fstat(5, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+openat(AT_FDCWD, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 6
+openat(5, "run", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 7
+fstat(7, {st_mode=S_IFDIR|0755, st_size=1040, ...}) = 0
+close(5)                                = 0
+openat(7, "systemd", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 5
+fstat(5, {st_mode=S_IFDIR|0755, st_size=580, ...}) = 0
+close(7)                                = 0
+openat(5, "system-preset", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = -1 ENOENT (No such file or directory)
+close(6)                                = 0
+close(5)                                = 0
+close(4)                                = 0
+openat(AT_FDCWD, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 4
+statx(4, ".", AT_STATX_SYNC_AS_STAT, STATX_TYPE|STATX_INO|STATX_MNT_ID, {stx_mask=STATX_BASIC_STATS|STATX_MNT_ID, stx_attributes=STATX_ATTR_MOUNT_ROOT, stx_mode=S_IFDIR|0755, stx_size=4096, ...}) = 0
+statx(4, "..", AT_STATX_SYNC_AS_STAT, STATX_TYPE|STATX_INO|STATX_MNT_ID, {stx_mask=STATX_BASIC_STATS|STATX_MNT_ID, stx_attributes=STATX_ATTR_MOUNT_ROOT, stx_mode=S_IFDIR|0755, stx_size=4096, ...}) = 0
+openat(4, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 5
+fstat(5, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+openat(AT_FDCWD, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 6
+openat(5, "usr", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 7
+fstat(7, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+close(5)                                = 0
+openat(7, "local", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 5
+fstat(5, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+close(7)                                = 0
+openat(5, "lib", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 7
+fstat(7, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+close(5)                                = 0
+openat(7, "systemd", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = -1 ENOENT (No such file or directory)
+close(6)                                = 0
+close(7)                                = 0
+close(4)                                = 0
+openat(AT_FDCWD, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 4
+statx(4, ".", AT_STATX_SYNC_AS_STAT, STATX_TYPE|STATX_INO|STATX_MNT_ID, {stx_mask=STATX_BASIC_STATS|STATX_MNT_ID, stx_attributes=STATX_ATTR_MOUNT_ROOT, stx_mode=S_IFDIR|0755, stx_size=4096, ...}) = 0
+statx(4, "..", AT_STATX_SYNC_AS_STAT, STATX_TYPE|STATX_INO|STATX_MNT_ID, {stx_mask=STATX_BASIC_STATS|STATX_MNT_ID, stx_attributes=STATX_ATTR_MOUNT_ROOT, stx_mode=S_IFDIR|0755, stx_size=4096, ...}) = 0
+openat(4, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 5
+fstat(5, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+openat(AT_FDCWD, "/", O_RDONLY|O_CLOEXEC|O_PATH|O_DIRECTORY) = 6
+openat(5, "usr", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 7
+fstat(7, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+close(5)                                = 0
+openat(7, "lib", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 5
+fstat(5, {st_mode=S_IFDIR|0555, st_size=12288, ...}) = 0
+close(7)                                = 0
+openat(5, "systemd", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 7
+fstat(7, {st_mode=S_IFDIR|0755, st_size=12288, ...}) = 0
+close(5)                                = 0
+openat(7, "system-preset", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 5
+fstat(5, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+close(7)                                = 0
+close(6)                                = 0
+close(4)                                = 0
+openat(5, ".", O_RDONLY|O_NONBLOCK|O_NOFOLLOW|O_CLOEXEC|O_DIRECTORY) = 4
+fstat(4, {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+fcntl(4, F_GETFL)                       = 0x38800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE|O_NOFOLLOW|O_DIRECTORY)
+fcntl(4, F_SETFD, FD_CLOEXEC)           = 0
+close(5)                                = 0
+getdents64(4, 0x627f2ff91a20 /* 3 entries */, 32768) = 88
+getdents64(4, 0x627f2ff91a20 /* 0 entries */, 32768) = 0
+close(4)                                = 0
+openat(AT_FDCWD, "/usr/lib/systemd/system-preset/90-systemd.preset", O_RDONLY|O_CLOEXEC) = 4
+fstat(4, {st_mode=S_IFREG|0644, st_size=1458, ...}) = 0
+read(4, "#  SPDX-License-Identifier: LGPL"..., 4096) = 1458
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(4, TCGETS, 0x7ffe67b567f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+read(4, "", 4096)                       = 0
+close(4)                                = 0
+openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache", O_RDONLY|O_CLOEXEC) = 4
+fstat(4, {st_mode=S_IFREG|0644, st_size=27028, ...}) = 0
+mmap(NULL, 27028, PROT_READ, MAP_SHARED, 4, 0) = 0x7c711ccd6000
+close(4)                                = 0
+futex(0x7c711c00472c, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+brk(0x627f2ffc6000)                     = 0x627f2ffc6000
+ioctl(1, TCGETS, {c_iflag=ICRNL|IXON|IUTF8, c_oflag=NL0|CR0|XTABS|BS0|VT0|FF0|OPOST|ONLCR, c_cflag=B38400|CS8|CREAD, c_lflag=ISIG|ICANON|ECHO|IEXTEN|ECHOCTL|ECHOKE, ...}) = 0
+ioctl(1, TIOCGWINSZ, {ws_row=33, ws_col=190, ws_xpixel=0, ws_ypixel=0}) = 0
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0x6), ...}) = 0
+write(1, "UNIT FILE                       "..., 68) = 68
+write(1, "accounts-daemon.service         "..., 69) = 69
+write(1, "alsa-restore.service            "..., 63) = 63
+write(1, "alsa-state.service              "..., 63) = 63
+write(1, "alsa-utils.service              "..., 69) = 69
+write(1, "anacron.service                 "..., 69) = 69
+write(1, "apparmor.service                "..., 69) = 69
+write(1, "apport-autoreport.service       "..., 63) = 63
+write(1, "apport-coredump-hook@.service   "..., 63) = 63
+write(1, "apport-forward@.service         "..., 63) = 63
+write(1, "apport.service                  "..., 69) = 69
+write(1, "apt-daily-upgrade.service       "..., 63) = 63
+write(1, "apt-daily.service               "..., 63) = 63
+write(1, "apt-news.service                "..., 63) = 63
+write(1, "autovt@.service                 "..., 63) = 63
+write(1, "avahi-daemon.service            "..., 69) = 69
+write(1, "binfmt-support.service          "..., 69) = 69
+write(1, "bluetooth.service               "..., 69) = 69
+write(1, "bolt.service                    "..., 63) = 63
+write(1, "brltty-udev.service             "..., 63) = 63
+write(1, "brltty.service                  "..., 69) = 69
+write(1, "cgroupfs-mount.service          "..., 63) = 63
+write(1, "colord.service                  "..., 63) = 63
+write(1, "configure-printer@.service      "..., 63) = 63
+write(1, "console-getty.service           "..., 70) = 70
+write(1, "console-setup.service           "..., 69) = 69
+write(1, "container-getty@.service        "..., 63) = 63
+write(1, "containerd.service              "..., 69) = 69
+write(1, "cron.service                    "..., 69) = 69
+write(1, "cryptdisks-early.service        "..., 69) = 69
+write(1, "cryptdisks.service              "..., 69) = 69
+write(1, "cups-browsed.service            "..., 69) = 69
+write(1, "cups.service                    "..., 69) = 69
+write(1, "dbus-fi.w1.wpa_supplicant1.servi"..., 63) = 63
+write(1, "dbus-org.bluez.service          "..., 63) = 63
+write(1, "dbus-org.fedoraproject.FirewallD"..., 63) = 63
+write(1, "dbus-org.freedesktop.Avahi.servi"..., 63) = 63
+write(1, "dbus-org.freedesktop.hostname1.s"..., 63) = 63
+write(1, "dbus-org.freedesktop.locale1.ser"..., 63) = 63
+write(1, "dbus-org.freedesktop.login1.serv"..., 63) = 63
+write(1, "dbus-org.freedesktop.ModemManage"..., 63) = 63
+write(1, "dbus-org.freedesktop.nm-dispatch"..., 63) = 63
+write(1, "dbus-org.freedesktop.resolve1.se"..., 63) = 63
+write(1, "dbus-org.freedesktop.thermald.se"..., 63) = 63
+write(1, "dbus-org.freedesktop.timedate1.s"..., 63) = 63
+write(1, "dbus-org.freedesktop.timesync1.s"..., 63) = 63
+write(1, "dbus.service                    "..., 63) = 63
+write(1, "debug-shell.service             "..., 70) = 70
+write(1, "display-manager.service         "..., 63) = 63
+write(1, "dmesg.service                   "..., 69) = 69
+write(1, "docker.service                  "..., 69) = 69
+write(1, "dpkg-db-backup.service          "..., 63) = 63
+write(1, "drkonqi-coredump-processor@.serv"..., 69) = 69
+write(1, "e2scrub@.service                "..., 63) = 63
+write(1, "e2scrub_all.service             "..., 63) = 63
+write(1, "e2scrub_fail@.service           "..., 63) = 63
+write(1, "e2scrub_reap.service            "..., 69) = 69
+write(1, "ead.service                     "..., 69) = 69
+write(1, "emergency.service               "..., 63) = 63
+write(1, "esm-cache.service               "..., 63) = 63
+write(1, "firewalld.service               "..., 69) = 69
+write(1, "forticlient-scheduler.service   "..., 69) = 69
+write(1, "friendly-recovery.service       "..., 63) = 63
+write(1, "fstrim.service                  "..., 63) = 63
+write(1, "fwupd-offline-update.service    "..., 63) = 63
+write(1, "fwupd-refresh.service           "..., 63) = 63
+write(1, "fwupd.service                   "..., 63) = 63
+write(1, "gdm3.service                    "..., 63) = 63
+write(1, "gdomap.service                  "..., 69) = 69
+write(1, "geoclue.service                 "..., 63) = 63
+write(1, "getty-static.service            "..., 63) = 63
+write(1, "getty@.service                  "..., 69) = 69
+write(1, "gpu-manager.service             "..., 69) = 69
+write(1, "grub-common.service             "..., 69) = 69
+write(1, "grub-initrd-fallback.service    "..., 69) = 69
+write(1, "hddtemp.service                 "..., 63) = 63
+write(1, "hwclock.service                 "..., 69) = 69
+write(1, "iio-sensor-proxy.service        "..., 63) = 63
+write(1, "initrd-cleanup.service          "..., 63) = 63
+write(1, "initrd-parse-etc.service        "..., 63) = 63
+write(1, "initrd-switch-root.service      "..., 63) = 63
+write(1, "initrd-udevadm-cleanup-db.servic"..., 63) = 63
+write(1, "ipp-usb.service                 "..., 63) = 63
+write(1, "irqbalance.service              "..., 69) = 69
+write(1, "iwd.service                     "..., 69) = 69
+write(1, "kerneloops.service              "..., 69) = 69
+write(1, "keyboard-setup.service          "..., 69) = 69
+write(1, "kmod-static-nodes.service       "..., 63) = 63
+write(1, "kmod.service                    "..., 63) = 63
+write(1, "ldconfig.service                "..., 63) = 63
+write(1, "lightdm.service                 "..., 63) = 63
+write(1, "lm-sensors.service              "..., 69) = 69
+write(1, "logrotate.service               "..., 63) = 63
+write(1, "man-db.service                  "..., 63) = 63
+write(1, "ModemManager.service            "..., 69) = 69
+write(1, "modprobe@.service               "..., 63) = 63
+write(1, "mono-xsp4.service               "..., 63) = 63
+write(1, "motd-news.service               "..., 63) = 63
+write(1, "netplan-ovs-cleanup.service     "..., 69) = 69
+write(1, "networkd-dispatcher.service     "..., 69) = 69
+write(1, "NetworkManager-dispatcher.servic"..., 69) = 69
+write(1, "NetworkManager-wait-online.servi"..., 69) = 69
+write(1, "NetworkManager.service          "..., 69) = 69
+write(1, "nftables.service                "..., 69) = 69
+write(1, "nm-priv-helper.service          "..., 63) = 63
+write(1, "openvpn-client@.service         "..., 69) = 69
+write(1, "openvpn-server@.service         "..., 69) = 69
+write(1, "openvpn.service                 "..., 69) = 69
+write(1, "openvpn@.service                "..., 69) = 69
+write(1, "packagekit-offline-update.servic"..., 63) = 63
+write(1, "packagekit.service              "..., 63) = 63
+write(1, "pam_namespace.service           "..., 63) = 63
+write(1, "plocate-updatedb.service        "..., 63) = 63
+write(1, "plymouth-halt.service           "..., 63) = 63
+write(1, "plymouth-kexec.service          "..., 63) = 63
+write(1, "plymouth-log.service            "..., 63) = 63
+write(1, "plymouth-poweroff.service       "..., 63) = 63
+write(1, "plymouth-quit-wait.service      "..., 63) = 63
+write(1, "plymouth-quit.service           "..., 63) = 63
+write(1, "plymouth-read-write.service     "..., 63) = 63
+write(1, "plymouth-reboot.service         "..., 63) = 63
+write(1, "plymouth-start.service          "..., 63) = 63
+write(1, "plymouth-switch-root-initramfs.s"..., 63) = 63
+write(1, "plymouth-switch-root.service    "..., 63) = 63
+write(1, "plymouth.service                "..., 63) = 63
+write(1, "polkit.service                  "..., 63) = 63
+write(1, "postfix.service                 "..., 69) = 69
+write(1, "power-profiles-daemon.service   "..., 69) = 69
+write(1, "procps.service                  "..., 63) = 63
+write(1, "pulseaudio-enable-autospawn.serv"..., 69) = 69
+write(1, "quotaon.service                 "..., 63) = 63
+write(1, "rc-local.service                "..., 63) = 63
+write(1, "rescue.service                  "..., 63) = 63
+write(1, "rsync.service                   "..., 69) = 69
+write(1, "rsyslog.service                 "..., 69) = 69
+write(1, "rtkit-daemon.service            "..., 69) = 69
+write(1, "saned.service                   "..., 69) = 69
+write(1, "saned@.service                  "..., 69) = 69
+write(1, "sddm.service                    "..., 69) = 69
+write(1, "secureboot-db.service           "..., 69) = 69
+write(1, "serial-getty@.service           "..., 69) = 69
+write(1, "setvtrgb.service                "..., 69) = 69
+write(1, "smartd.service                  "..., 63) = 63
+write(1, "smartmontools.service           "..., 69) = 69
+write(1, "snapd.aa-prompt-listener.service"..., 69) = 69
+write(1, "snapd.apparmor.service          "..., 69) = 69
+write(1, "snapd.autoimport.service        "..., 69) = 69
+write(1, "snapd.core-fixup.service        "..., 69) = 69
+write(1, "snapd.failure.service           "..., 63) = 63
+write(1, "snapd.recovery-chooser-trigger.s"..., 69) = 69
+write(1, "snapd.seeded.service            "..., 69) = 69
+write(1, "snapd.service                   "..., 69) = 69
+write(1, "snapd.snap-repair.service       "..., 63) = 63
+write(1, "snapd.system-shutdown.service   "..., 69) = 69
+write(1, "speech-dispatcher.service       "..., 63) = 63
+write(1, "speech-dispatcherd.service      "..., 69) = 69
+write(1, "spice-vdagent.service           "..., 63) = 63
+write(1, "spice-vdagentd.service          "..., 69) = 69
+write(1, "ssl-cert.service                "..., 69) = 69
+write(1, "sudo.service                    "..., 69) = 69
+write(1, "switcheroo-control.service      "..., 69) = 69
+write(1, "syslog.service                  "..., 63) = 63
+write(1, "sysstat-collect.service         "..., 63) = 63
+write(1, "sysstat-summary.service         "..., 63) = 63
+write(1, "sysstat.service                 "..., 69) = 69
+write(1, "system-update-cleanup.service   "..., 63) = 63
+write(1, "systemd-ask-password-console.ser"..., 63) = 63
+write(1, "systemd-ask-password-plymouth.se"..., 63) = 63
+write(1, "systemd-ask-password-wall.servic"..., 63) = 63
+write(1, "systemd-backlight@.service      "..., 63) = 63
+write(1, "systemd-battery-check.service   "..., 63) = 63
+write(1, "systemd-binfmt.service          "..., 63) = 63
+write(1, "systemd-boot-check-no-failures.s"..., 70) = 70
+write(1, "systemd-bsod.service            "..., 63) = 63
+write(1, "systemd-confext.service         "..., 69) = 69
+write(1, "systemd-exit.service            "..., 63) = 63
+write(1, "systemd-firstboot.service       "..., 63) = 63
+write(1, "systemd-fsck-root.service       "..., 69) = 69
+write(1, "systemd-fsck@.service           "..., 63) = 63
+write(1, "systemd-fsckd.service           "..., 63) = 63
+write(1, "systemd-growfs-root.service     "..., 63) = 63
+write(1, "systemd-growfs@.service         "..., 63) = 63
+write(1, "systemd-halt.service            "..., 63) = 63
+write(1, "systemd-hibernate-resume.service"..., 63) = 63
+write(1, "systemd-hibernate.service       "..., 63) = 63
+write(1, "systemd-hostnamed.service       "..., 63) = 63
+write(1, "systemd-hwdb-update.service     "..., 63) = 63
+write(1, "systemd-hybrid-sleep.service    "..., 63) = 63
+write(1, "systemd-initctl.service         "..., 63) = 63
+write(1, "systemd-journal-catalog-update.s"..., 63) = 63
+write(1, "systemd-journal-flush.service   "..., 63) = 63
+write(1, "systemd-journald.service        "..., 63) = 63
+write(1, "systemd-journald@.service       "..., 63) = 63
+write(1, "systemd-kexec.service           "..., 63) = 63
+write(1, "systemd-localed.service         "..., 63) = 63
+write(1, "systemd-logind.service          "..., 63) = 63
+write(1, "systemd-machine-id-commit.servic"..., 63) = 63
+write(1, "systemd-modules-load.service    "..., 63) = 63
+write(1, "systemd-network-generator.servic"..., 69) = 69
+write(1, "systemd-networkd-wait-online.ser"..., 69) = 69
+write(1, "systemd-networkd-wait-online@.se"..., 69) = 69
+write(1, "systemd-networkd.service        "..., 69) = 69
+write(1, "systemd-pcrextend@.service      "..., 63) = 63
+write(1, "systemd-pcrfs-root.service      "..., 63) = 63
+write(1, "systemd-pcrfs@.service          "..., 63) = 63
+write(1, "systemd-pcrlock-file-system.serv"..., 69) = 69
+write(1, "systemd-pcrlock-firmware-code.se"..., 69) = 69
+write(1, "systemd-pcrlock-firmware-config."..., 69) = 69
+write(1, "systemd-pcrlock-machine-id.servi"..., 69) = 69
+write(1, "systemd-pcrlock-make-policy.serv"..., 69) = 69
+write(1, "systemd-pcrlock-secureboot-autho"..., 69) = 69
+write(1, "systemd-pcrlock-secureboot-polic"..., 69) = 69
+write(1, "systemd-pcrmachine.service      "..., 63) = 63
+write(1, "systemd-pcrphase-initrd.service "..., 63) = 63
+write(1, "systemd-pcrphase-sysinit.service"..., 63) = 63
+write(1, "systemd-pcrphase.service        "..., 63) = 63
+write(1, "systemd-poweroff.service        "..., 63) = 63
+write(1, "systemd-pstore.service          "..., 69) = 69
+write(1, "systemd-quotacheck.service      "..., 63) = 63
+write(1, "systemd-random-seed.service     "..., 63) = 63
+write(1, "systemd-reboot.service          "..., 63) = 63
+write(1, "systemd-remount-fs.service      "..., 69) = 69
+write(1, "systemd-repart.service          "..., 63) = 63
+write(1, "systemd-resolved.service        "..., 69) = 69
+write(1, "systemd-rfkill.service          "..., 63) = 63
+write(1, "systemd-soft-reboot.service     "..., 63) = 63
+write(1, "systemd-storagetm.service       "..., 63) = 63
+write(1, "systemd-suspend-then-hibernate.s"..., 63) = 63
+write(1, "systemd-suspend.service         "..., 63) = 63
+write(1, "systemd-sysctl.service          "..., 63) = 63
+write(1, "systemd-sysext.service          "..., 69) = 69
+write(1, "systemd-sysext@.service         "..., 63) = 63
+write(1, "systemd-sysupdate-reboot.service"..., 69) = 69
+write(1, "systemd-sysupdate.service       "..., 69) = 69
+write(1, "systemd-sysusers.service        "..., 63) = 63
+write(1, "systemd-time-wait-sync.service  "..., 70) = 70
+write(1, "systemd-timedated.service       "..., 63) = 63
+write(1, "systemd-timesyncd.service       "..., 69) = 69
+write(1, "systemd-tmpfiles-clean.service  "..., 63) = 63
+write(1, "systemd-tmpfiles-setup-dev-early"..., 63) = 63
+write(1, "systemd-tmpfiles-setup-dev.servi"..., 63) = 63
+write(1, "systemd-tmpfiles-setup.service  "..., 63) = 63
+write(1, "systemd-tpm2-setup-early.service"..., 63) = 63
+write(1, "systemd-tpm2-setup.service      "..., 63) = 63
+write(1, "systemd-udev-settle.service     "..., 63) = 63
+write(1, "systemd-udev-trigger.service    "..., 63) = 63
+write(1, "systemd-udevd.service           "..., 63) = 63
+write(1, "systemd-update-done.service     "..., 63) = 63
+write(1, "systemd-update-utmp-runlevel.ser"..., 63) = 63
+write(1, "systemd-update-utmp.service     "..., 63) = 63
+write(1, "systemd-user-sessions.service   "..., 63) = 63
+write(1, "systemd-volatile-root.service   "..., 63) = 63
+write(1, "thermald.service                "..., 69) = 69
+write(1, "tpm-udev.service                "..., 63) = 63
+write(1, "ua-reboot-cmds.service          "..., 69) = 69
+write(1, "ua-timer.service                "..., 63) = 63
+write(1, "ubuntu-advantage.service        "..., 69) = 69
+write(1, "udev.service                    "..., 63) = 63
+write(1, "udisks2.service                 "..., 69) = 69
+write(1, "ufw.service                     "..., 69) = 69
+write(1, "unattended-upgrades.service     "..., 69) = 69
+write(1, "update-notifier-download.service"..., 63) = 63
+write(1, "update-notifier-motd.service    "..., 63) = 63
+write(1, "upower.service                  "..., 69) = 69
+write(1, "usb_modeswitch@.service         "..., 63) = 63
+write(1, "usbmuxd.service                 "..., 63) = 63
+write(1, "user-runtime-dir@.service       "..., 63) = 63
+write(1, "user@.service                   "..., 63) = 63
+write(1, "uuidd.service                   "..., 69) = 69
+write(1, "v4l2loopback.service            "..., 69) = 69
+write(1, "wacom-inputattach@.service      "..., 63) = 63
+write(1, "whoopsie.service                "..., 69) = 69
+write(1, "wpa_supplicant-nl80211@.service "..., 69) = 69
+write(1, "wpa_supplicant-wired@.service   "..., 69) = 69
+write(1, "wpa_supplicant.service          "..., 69) = 69
+write(1, "wpa_supplicant@.service         "..., 69) = 69
+write(1, "x11-common.service              "..., 69) = 69
+write(1, "\n276 unit files listed.\n", 24) = 24
+close(3)                                = 0
+exit_group(0)                           = ?
++++ exited with 0 +++

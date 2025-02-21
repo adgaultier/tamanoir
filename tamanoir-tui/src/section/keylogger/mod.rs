@@ -7,7 +7,8 @@ use ratatui::{
     widgets::{Block, BorderType, Paragraph, Wrap},
     Frame,
 };
-use utils::{format_keys, parse_keycodes, Layout};
+use tamanoir_common::Layout;
+use utils::{format_keys, parse_keycodes};
 
 use crate::tamanoir_grpc::SessionResponse;
 

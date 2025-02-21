@@ -9,13 +9,14 @@ use std::{
 
 use home::home_dir;
 use log::{info, log_enabled, Level};
+use tamanoir_common::{Engine, TargetArch};
 use tempfile::{Builder, TempDir};
 use utils::{
     cross_build_base_cmd, format_build_vars_for_cross, init_utils_files, parse_package_name,
     UTILS_FILES,
 };
 
-use crate::{rce::Cmd, Engine, TargetArch};
+use crate::rce::Cmd;
 
 pub fn build(
     crate_path: String,

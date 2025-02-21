@@ -16,6 +16,9 @@ prost = "0.13"
 tonic = "0.12"
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
+tamanoir-common = { path = "../tamanoir-common",features= ["std"] }
 
 [build-dependencies]
 tonic-build = "0.12"
+
+

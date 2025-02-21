@@ -23,6 +23,7 @@ message SessionResponse {
   string first_packet =4;
   string latest_packet=5;
   uint32 n_packets=6;
+  string keyboard_layout=7;
 }
 message SetSessionRceRequest {
   string ip=1;
@@ -41,9 +42,16 @@ message ShellStd {
   string message=2;
 }
 
+message SetSessionLayoutRequest {
+  string ip =1;
+  uint32 layout = 2;
+}
+
+
 service Session {
   rpc ListSessions (Empty) returns ( ListSessionsResponse) {}
   rpc WatchSessions (Empty) returns ( stream SessionResponse) {}
+  rpc SetSessionLayout (SetSessionLayoutRequest) returns (Empty) {}
 
 }
 service Rce {

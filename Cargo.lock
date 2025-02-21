@@ -1686,6 +1686,9 @@ dependencies = [
 [[package]]
 name = "tamanoir-common"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "tamanoir-ebpf"
@@ -1710,6 +1713,7 @@ dependencies = [
  "ratatui",
  "serde",
  "serde_yaml",
+ "tamanoir-common",
  "tokio",
  "tokio-stream",
  "tonic",

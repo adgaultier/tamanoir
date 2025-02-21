@@ -2,6 +2,7 @@ use std::{net::Ipv4Addr, pin::Pin, str::FromStr};
 
 use home::home_dir;
 use log::{debug, info};
+use tamanoir_common::Layout;
 use tokio::fs;
 use tokio_stream::Stream;
 use tonic::{transport::Server, Code, Request, Response, Status};
@@ -12,7 +13,8 @@ use crate::{
         remote_shell_server::{RemoteShell, RemoteShellServer},
         session_server::{Session, SessionServer},
         AvailableRceResponse, DeleteSessionRceRequest, Empty, ListSessionsResponse,
-        SessionRcePayload, SessionResponse, SetSessionRceRequest, ShellStd,
+        SessionRcePayload, SessionResponse, SetSessionLayoutRequest, SetSessionRceRequest,
+        ShellStd,
     },
     tcp_shell::TcpShell,
     SessionsStore, TargetArch,
@@ -65,6 +67,7 @@ impl Session for SessionsStore {
                 first_packet: s.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                 latest_packet: s.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                 n_packets: s.n_packets as u32,
+                keyboard_layout: s.keyboard_layout.to_string(),
             })
         }
 
@@ -95,13 +98,42 @@ impl Session for SessionsStore {
                     rce_payload: rce_payload,
                     first_packet:  session.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                     latest_packet: session.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
-                    n_packets:session.n_packets as u32
+                    n_packets:session.n_packets as u32,
+                    keyboard_layout: session.keyboard_layout.to_string()
+
                 };
 
 
         }
         };
         Ok(Response::new(Box::pin(stream) as Self::WatchSessionsStream))
+    }
+    async fn set_session_layout(
+        &self,
+        request: Request<SetSessionLayoutRequest>,
+    ) -> Result<Response<Empty>, Status> {
+        debug!(
+            "<SetSessionLayout> Got a request from {:?}",
+            request.remote_addr()
+        );
+        let req = request.into_inner();
+        let ip = Ipv4Addr::from_str(&req.ip)
+            .map_err(|_| Status::new(Code::InvalidArgument, format!("{}: invalid ip", req.ip)))?;
+        let layout = Layout::from(req.layout as u8);
+        let mut current_sessions = self.sessions.lock().await;
+        match current_sessions.get_mut(&ip) {
+            Some(existing_session) => {
+                existing_session.set_layout(layout);
+                self.try_send(existing_session.clone())
+                    .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
+
+                Ok(Response::new(Empty {}))
+            }
+            None => Err(Status::new(
+                Code::NotFound,
+                format!("{}: session not found", ip),
+            )),
+        }
     }
 }
 

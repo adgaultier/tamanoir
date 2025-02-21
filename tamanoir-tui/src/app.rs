@@ -10,7 +10,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::{
     event::Event,
-    grpc::{RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
+    grpc::{RceServiceClient, RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
     section::{shell::ShellCommandHistory, Sections},
     tamanoir_grpc::SessionResponse,
 };
@@ -35,12 +35,18 @@ impl App {
 
         let mut session_client = SessionServiceClient::new(ip, port).await?;
         let shell_client = RemoteShellServiceClient::new(ip, port).await?;
+        let mut rce_client = RceServiceClient::new(ip, port).await?;
 
         let mut shell_receiver = shell_client.clone();
         let mut session_receiver = session_client.clone();
 
-        let mut sections = Sections::new(shell_history.clone(), sessions.clone());
-        sections.session_section.init(&mut session_client).await?;
+        let mut sections = Sections::new(
+            shell_history.clone(),
+            sessions.clone(),
+            &mut session_client,
+            &mut rce_client,
+        )
+        .await?;
 
         tokio::spawn(async move {
             tokio::try_join!(

