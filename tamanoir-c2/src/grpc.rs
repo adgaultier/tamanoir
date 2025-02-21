@@ -68,6 +68,7 @@ impl Session for SessionsStore {
                 latest_packet: s.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                 n_packets: s.n_packets as u32,
                 keyboard_layout: s.keyboard_layout as u32,
+                arch: s.arch.clone() as u32,
             })
         }
 
@@ -99,7 +100,8 @@ impl Session for SessionsStore {
                     first_packet:  session.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                     latest_packet: session.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                     n_packets:session.n_packets as u32,
-                    keyboard_layout: session.keyboard_layout as u32
+                    keyboard_layout: session.keyboard_layout as u32,
+                    arch: session.arch.clone() as u32,
                 };
 
 

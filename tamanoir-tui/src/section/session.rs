@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, BorderType, Cell, HighlightSpacing, Row, ScrollbarState, Table, TableState},
     Frame,
 };
-use tamanoir_common::Layout as KeyboardLayout;
+use tamanoir_common::{Layout as KeyboardLayout, TargetArch};
 
 use crate::{
     app::{AppResult, SessionsMap},
@@ -230,6 +230,10 @@ impl SessionSection {
                 Cell::from(Span::from(s.first_packet.clone())),
                 Cell::from(Span::from("Latest Packet:").bold()),
                 Cell::from(Span::from(s.latest_packet.clone())),
+                Cell::from(Span::from("Arch:").bold()),
+                Cell::from(Span::from(
+                    TargetArch::try_from(s.arch as u8).unwrap().to_string(),
+                )),
                 Cell::from(Span::from("Shell Status:").bold()),
                 Cell::from(Span::from(format!("{}", s.get_shell_status()))),
             ];

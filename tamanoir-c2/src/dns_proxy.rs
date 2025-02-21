@@ -31,7 +31,7 @@ pub async fn mangle(
     let mut payload_it = data[data.len() - payload_len..].iter();
 
     let arch = TargetArch::try_from(*payload_it.next().ok_or(Error::msg("data to short"))?)
-        .map_err(|e| anyhow::anyhow!("Invalid arch: {}", e))?; //first byte is target arch
+        .map_err(|e| anyhow::anyhow!("Invalid first byte: {}", e))?; //first byte is target arch
     let payload: Vec<u8> = payload_it.copied().collect();
 
     let mut data = data[..(data.len().saturating_sub(payload_len))].to_vec();

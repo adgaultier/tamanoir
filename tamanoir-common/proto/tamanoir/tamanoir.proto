@@ -24,6 +24,7 @@ message SessionResponse {
   string latest_packet=5;
   uint32 n_packets=6;
   uint32 keyboard_layout=7;
+  uint32 arch=8;
 }
 message SetSessionRceRequest {
   string ip=1;
