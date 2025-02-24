@@ -31,7 +31,7 @@ message SetSessionRceRequest {
   string rce=2;
   string target_arch=3; 
 }
-message DeleteSessionRceRequest {
+message SessionRequest {
   string ip=1;
 }
 
@@ -48,6 +48,14 @@ message SetSessionLayoutRequest {
   uint32 layout = 2;
 }
 
+enum ShellStatusEnum {
+  Unavailable = 0;
+  Available = 1;
+}
+
+message ShellStatusResponse {
+  ShellStatusEnum status=1;
+}
 
 service Session {
   rpc ListSessions (Empty) returns ( ListSessionsResponse) {}
@@ -57,12 +65,12 @@ service Session {
 }
 service Rce {
   rpc SetSessionRce (SetSessionRceRequest) returns (Empty) {}
-  rpc DeleteSessionRce (DeleteSessionRceRequest) returns (Empty) {}
+  rpc DeleteSessionRce (SessionRequest) returns (Empty) {}
   rpc ListAvailableRce (Empty) returns (AvailableRceResponse) {}
 }
 service RemoteShell {
   rpc WatchShellStdOut (Empty) returns ( stream ShellStd) {}
   rpc SendShellStdIn (ShellStd) returns (Empty) {}
-
-
+  rpc ShellStatus (SessionRequest) returns (ShellStatusResponse) {}
+  rpc ShellClose (SessionRequest) returns (Empty) {}
 }

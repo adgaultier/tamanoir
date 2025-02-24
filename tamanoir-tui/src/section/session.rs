@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, BorderType, Cell, HighlightSpacing, Row, ScrollbarState, Table, TableState},
     Frame,
 };
@@ -19,7 +19,7 @@ pub struct SessionSection {
     state: TableState,
     scroll_state: ScrollbarState,
     pub selected_session: Option<SessionResponse>,
-    pub edit_mode: bool,
+    pub edition_mode: bool,
     session_edit_subsection: SessionEditSubsection,
 }
 
@@ -44,16 +44,20 @@ impl SessionSection {
             state: TableState::default().with_selected(0),
             scroll_state: ScrollbarState::new(0),
             selected_session,
-            edit_mode: false,
+            edition_mode: false,
             session_edit_subsection,
         })
+    }
+
+    pub fn is_editing(&self) -> bool {
+        self.selected_session.is_some() && self.edition_mode
     }
     pub async fn apply_change(
         &mut self,
         session_client: &mut SessionServiceClient,
         rce_client: &mut RceServiceClient,
     ) -> AppResult<()> {
-        if self.edit_mode {
+        if self.edition_mode {
             let selected = self.session_edit_subsection.state().selected().unwrap();
 
             match self.session_edit_subsection.editing_section {
@@ -91,26 +95,26 @@ impl SessionSection {
         }
     }
     pub fn next_item(&mut self) {
-        if self.edit_mode {
+        if self.edition_mode {
             self.session_edit_subsection.scroll_down()
         } else {
             self.scroll_down()
         }
     }
     pub fn previous_item(&mut self) {
-        if self.edit_mode {
+        if self.edition_mode {
             self.session_edit_subsection.scroll_up()
         } else {
             self.scroll_up()
         }
     }
     pub fn next_edit_section(&mut self) {
-        if self.edit_mode {
+        if self.edition_mode {
             self.session_edit_subsection.next_edit_section()
         }
     }
     pub fn previous_edit_section(&mut self) {
-        if self.edit_mode {
+        if self.edition_mode {
             self.session_edit_subsection.previous_edit_section()
         }
     }
@@ -155,7 +159,7 @@ impl SessionSection {
             .scroll_state
             .position(self.sessions.read().unwrap().len());
     }
-    fn render_session_edition(&mut self, frame: &mut Frame, block: Rect, is_focused: bool) {
+    pub fn render_session_edition(&mut self, frame: &mut Frame, block: Rect) {
         let selected_row_style = Style::default()
             .add_modifier(Modifier::REVERSED)
             .fg(Color::LightBlue);
@@ -190,24 +194,32 @@ impl SessionSection {
                 Table::new(rows, [Constraint::Fill(1), Constraint::Fill(1)]).header(header)
             }
         };
-        let title = match self.session_edit_subsection.editing_section {
-            EditSubsection::KeyboardLayout => "Change Keyboard Layout",
-            EditSubsection::RcePayload => "RCE Payload",
+        let style_0 = match self.session_edit_subsection.editing_section {
+            EditSubsection::KeyboardLayout => Style::default().fg(Color::Yellow).bold(),
+            EditSubsection::RcePayload => Style::default().fg(Color::Blue),
         };
-        let highlight_color = if is_focused {
-            Color::Yellow
-        } else {
-            Color::Blue
+        let style_1 = match self.session_edit_subsection.editing_section {
+            EditSubsection::KeyboardLayout => Style::default().fg(Color::Blue),
+            EditSubsection::RcePayload => Style::default().fg(Color::Yellow).bold(),
         };
+
         frame.render_stateful_widget(
             table.row_highlight_style(selected_row_style).block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(highlight_color))
-                    .title(Span::styled(
-                        format!("Edit Session: {}", title),
-                        Style::default().fg(highlight_color).bold(),
-                    )),
+                    .border_style(Style::new().fg(Color::Blue))
+                    .title(
+                        Line::from(Span::styled(
+                            format!(
+                                "Edit Session ({})",
+                                self.selected_session.as_ref().unwrap().ip,
+                            ),
+                            Style::default().fg(Color::Blue).bold(),
+                        ))
+                        .right_aligned(),
+                    )
+                    .title(Span::styled("Update Keyboard Layout", style_0))
+                    .title(Span::styled("Update RCE Payload", style_1)),
             ),
             block,
             self.session_edit_subsection.state(),
@@ -340,7 +352,7 @@ impl SessionSection {
                 .collect()
         };
 
-        let highlight_color = if is_focused && !self.edit_mode {
+        let highlight_color = if is_focused && !self.edition_mode {
             Color::Yellow
         } else {
             Color::Blue
@@ -359,12 +371,7 @@ impl SessionSection {
             );
 
         frame.render_stateful_widget(table, session_selection, &mut self.state);
-
-        if self.edit_mode {
-            self.render_session_edition(frame, session_info, is_focused);
-        } else {
-            self.render_session_info(frame, session_info);
-        }
+        self.render_session_info(frame, session_info);
     }
 }
 #[derive(Debug)]

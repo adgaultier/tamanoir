@@ -6,10 +6,10 @@ use std::fmt::Display;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Paragraph},
+    widgets::{Block, BorderType, Clear, Paragraph},
     Frame,
 };
 use shell::{Shell, ShellCommandHistory};
@@ -83,19 +83,23 @@ impl Sections {
                     }
                 }
                 FocusedSection::Sessions => {
-                    base_message.extend([
-                        Span::from(" | "),
-                        Span::from("e:").bold().yellow(),
-                        Span::from(" (Un)Edit").yellow(),
-                    ]);
-                    if self.session_section.edit_mode {
+                    if self.session_section.is_editing() {
                         base_message.extend([
                             Span::from(" | "),
-                            Span::from("󰹳 :").bold().yellow(),
+                            Span::from(" 󱊷 :").bold().yellow(),
+                            Span::from(" Exit Edit Mode").yellow(),
+                            Span::from(" | "),
+                            Span::from(" :").bold().yellow(),
                             Span::from(" Switch Edit Section").yellow(),
                             Span::from(" | "),
-                            Span::from("󱁐 :").bold().yellow(),
+                            Span::from("󰌑 :").bold().yellow(),
                             Span::from(" Apply Change").yellow(),
+                        ]);
+                    } else {
+                        base_message.extend([
+                            Span::from(" | "),
+                            Span::from("e:").bold().yellow(),
+                            Span::from(" Edit Mode").yellow(),
                         ]);
                     }
                 }
@@ -184,6 +188,16 @@ impl Sections {
                 self.shell_available(),
             );
         }
+        if self.focused_section == FocusedSection::Sessions && self.session_section.edition_mode {
+            let popup_block = main_block.inner(Margin {
+                horizontal: 3,
+                vertical: 3,
+            });
+            frame.render_widget(Clear, popup_block);
+
+            self.session_section
+                .render_session_edition(frame, popup_block);
+        }
     }
     pub async fn handle_mouse(&mut self, mouse_event: MouseEvent) -> AppResult<()> {
         match mouse_event.kind {
@@ -211,30 +225,46 @@ impl Sections {
         rce_client: &mut RceServiceClient,
     ) -> AppResult<()> {
         match key_event.code {
-            KeyCode::Tab => match self.focused_section {
-                FocusedSection::Sessions => self.focused_section = FocusedSection::KeyLogger,
-                FocusedSection::KeyLogger => {
-                    if self.shell_percentage_split.is_some() {
-                        self.focused_section = FocusedSection::Shell
-                    } else {
-                        self.focused_section = FocusedSection::Sessions
+            KeyCode::Tab => {
+                if self.session_section.is_editing() {
+                    self.session_section.next_edit_section()
+                } else {
+                    match self.focused_section {
+                        FocusedSection::Sessions => {
+                            self.focused_section = FocusedSection::KeyLogger
+                        }
+                        FocusedSection::KeyLogger => {
+                            if self.shell_percentage_split.is_some() {
+                                self.focused_section = FocusedSection::Shell
+                            } else {
+                                self.focused_section = FocusedSection::Sessions
+                            }
+                        }
+                        FocusedSection::Shell => self.focused_section = FocusedSection::Sessions,
+                        _ => {}
                     }
                 }
-                FocusedSection::Shell => self.focused_section = FocusedSection::Sessions,
-                _ => {}
-            },
-            KeyCode::BackTab => match self.focused_section {
-                FocusedSection::KeyLogger => self.focused_section = FocusedSection::Sessions,
-                FocusedSection::Shell => self.focused_section = FocusedSection::KeyLogger,
-                FocusedSection::Sessions => {
-                    if self.shell_percentage_split.is_some() {
-                        self.focused_section = FocusedSection::Shell
-                    } else {
-                        self.focused_section = FocusedSection::KeyLogger
+            }
+            KeyCode::BackTab => {
+                if self.session_section.is_editing() {
+                    self.session_section.previous_edit_section()
+                } else {
+                    match self.focused_section {
+                        FocusedSection::KeyLogger => {
+                            self.focused_section = FocusedSection::Sessions
+                        }
+                        FocusedSection::Shell => self.focused_section = FocusedSection::KeyLogger,
+                        FocusedSection::Sessions => {
+                            if self.shell_percentage_split.is_some() {
+                                self.focused_section = FocusedSection::Shell
+                            } else {
+                                self.focused_section = FocusedSection::KeyLogger
+                            }
+                        }
+                        _ => {}
                     }
                 }
-                _ => {}
-            },
+            }
             KeyCode::Char('s') if key_event.modifiers == KeyModifiers::CONTROL => {
                 if self.shell_percentage_split.is_some() {
                     self.shell_percentage_split = None;
@@ -267,14 +297,14 @@ impl Sections {
                 FocusedSection::Sessions => match key_event.code {
                     KeyCode::Char('j') | KeyCode::Down => self.session_section.next_item(),
                     KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_item(),
-                    KeyCode::Char('e') => {
-                        self.session_section.edit_mode = !self.session_section.edit_mode;
+                    KeyCode::Char('e') if self.session_section.selected_session.is_some() => {
+                        self.session_section.edition_mode = true;
                     }
-                    KeyCode::Char('h') | KeyCode::Left => {
-                        self.session_section.previous_edit_section()
+                    KeyCode::Esc if self.session_section.is_editing() => {
+                        self.session_section.edition_mode = false;
                     }
-                    KeyCode::Char('l') | KeyCode::Right => self.session_section.next_edit_section(),
-                    KeyCode::Char(' ') if self.session_section.edit_mode => {
+
+                    KeyCode::Enter if self.session_section.is_editing() => {
                         let _ = self
                             .session_section
                             .apply_change(session_client, rce_client)

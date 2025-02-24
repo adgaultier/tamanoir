@@ -30,7 +30,7 @@ tui-run  grpc_port="50051" log_level="debug":
     
 # Run c2 server
 c2-run:
-    sudo systemctl stop systemd-resolved && RUST_LOG=debug sudo -E ./target/release/tamanoir-c2 start
+    sudo systemctl stop systemd-resolved && RUST_LOG=info sudo -E ./target/release/tamanoir-c2 start
 
 
 

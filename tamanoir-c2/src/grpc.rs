@@ -12,8 +12,8 @@ use crate::{
         rce_server::{Rce, RceServer},
         remote_shell_server::{RemoteShell, RemoteShellServer},
         session_server::{Session, SessionServer},
-        AvailableRceResponse, DeleteSessionRceRequest, Empty, ListSessionsResponse,
-        SessionRcePayload, SessionResponse, SetSessionLayoutRequest, SetSessionRceRequest,
+        AvailableRceResponse, Empty, ListSessionsResponse, SessionRcePayload, SessionRequest,
+        SessionResponse, SetSessionLayoutRequest, SetSessionRceRequest, ShellStatusResponse,
         ShellStd,
     },
     tcp_shell::TcpShell,
@@ -157,7 +157,7 @@ fn extract_rce_metadata(path: String) -> Option<(String, TargetArch)> {
 impl Rce for SessionsStore {
     async fn delete_session_rce(
         &self,
-        request: Request<DeleteSessionRceRequest>,
+        request: Request<SessionRequest>,
     ) -> Result<Response<Empty>, Status> {
         debug!(
             "<DeleteSessionRce> Got a request from {:?}",
@@ -290,5 +290,36 @@ impl RemoteShell for TcpShell {
             )
         })?;
         return Ok(Response::new(Empty {}));
+    }
+    async fn shell_status(
+        &self,
+        request: Request<SessionRequest>,
+    ) -> Result<Response<ShellStatusResponse>, Status> {
+        debug!(
+            "<ShellStatus> Got a request from {:?}",
+            request.remote_addr()
+        );
+        let req = request.into_inner();
+        match self.get_rx_tx(req.ip.clone()) {
+            Err(_) => Ok(Response::new(ShellStatusResponse { status: 0 })),
+            _ => Ok(Response::new(ShellStatusResponse { status: 1 })),
+        }
+    }
+    async fn shell_close(
+        &self,
+        request: Request<SessionRequest>,
+    ) -> Result<Response<Empty>, Status> {
+        debug!(
+            "<ShellClose> Got a request from {:?}",
+            request.remote_addr()
+        );
+        let req = request.into_inner();
+        match self.get_rx_tx(req.ip.clone()) {
+            Ok(_) => {
+                self.rx_tx_map.write().unwrap().remove(&req.ip.clone());
+            }
+            _ => {}
+        }
+        Ok(Response::new(Empty {}))
     }
 }

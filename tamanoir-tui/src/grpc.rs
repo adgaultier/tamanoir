@@ -16,8 +16,8 @@ use crate::{
     },
     tamanoir_grpc::{
         rce_client::RceClient, remote_shell_client::RemoteShellClient,
-        session_client::SessionClient, DeleteSessionRceRequest, Empty, SessionRcePayload,
-        SessionResponse, SetSessionLayoutRequest, SetSessionRceRequest, ShellStd,
+        session_client::SessionClient, Empty, SessionRcePayload, SessionRequest, SessionResponse,
+        SetSessionLayoutRequest, SetSessionRceRequest, ShellStd,
     },
 };
 
@@ -77,7 +77,12 @@ impl RemoteShellServiceClient {
             message: cmd.clone(),
         };
         let msg = Request::new(shell_msg);
-        self.client.send_shell_std_in(msg).await?;
+        match self.client.send_shell_std_in(msg).await {
+            Err(status) => {
+                dbg!("{}", status.code());
+            }
+            _ => {}
+        };
         Ok(())
     }
 }
@@ -105,7 +110,7 @@ impl RceServiceClient {
     }
     pub async fn delete_session_rce(&mut self, session_id: String) -> AppResult<()> {
         self.client
-            .delete_session_rce(DeleteSessionRceRequest { ip: session_id })
+            .delete_session_rce(SessionRequest { ip: session_id })
             .await?;
         Ok(())
     }
