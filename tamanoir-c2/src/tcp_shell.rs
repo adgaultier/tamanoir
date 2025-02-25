@@ -118,10 +118,12 @@ impl TcpShell {
             current_session.set_shell_availibility(true);
         }
 
+        info!("START LOOP");
         let sessions_store = self.session_store.sessions.clone();
         let read_task = tokio::spawn(async move {
             let mut buffer = vec![0; 1024];
             loop {
+                info!("LOOOP");
                 // Read data from the socket
                 match reader.read(&mut buffer).await {
                     Ok(0) => {
