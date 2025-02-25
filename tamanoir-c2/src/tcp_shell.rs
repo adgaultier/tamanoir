@@ -151,6 +151,12 @@ impl TcpShell {
                     }
                     Err(e) => {
                         error!("Failed to read from socket: {}", e);
+                        let mut current_sessions = sessions_store.sessions.lock().await;
+                        let current_session = current_sessions
+                            .get_mut(&Ipv4Addr::from_str(&ip).unwrap())
+                            .unwrap();
+                        current_session.set_shell_availibility(false);
+                        let _ = sessions_store.notify_update(current_session.clone());
                         break;
                     }
                 }
