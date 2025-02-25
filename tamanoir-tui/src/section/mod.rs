@@ -363,20 +363,19 @@ impl Display for ShellAvailablilityStatus {
 
 impl SessionResponse {
     fn get_shell_status(&self) -> ShellAvailablilityStatus {
-        match &self.rce_payload {
-            Some(rce_payload) => {
-                if rce_payload.name == "reverse-tcp" {
-                    if rce_payload.buffer_length > 0 {
+        if self.shell_availability {
+            ShellAvailablilityStatus::Connected
+        } else {
+            match &self.rce_payload {
+                Some(rce_payload) => {
+                    if rce_payload.name == "reverse-tcp" && rce_payload.buffer_length > 0 {
                         ShellAvailablilityStatus::Transmiting
                     } else {
-                        ShellAvailablilityStatus::Connected
+                        ShellAvailablilityStatus::NotSelectedForTransmission
                     }
-                } else {
-                    ShellAvailablilityStatus::NotSelectedForTransmission
                 }
+                None => ShellAvailablilityStatus::NotSelectedForTransmission,
             }
-
-            None => ShellAvailablilityStatus::NotSelectedForTransmission,
         }
     }
 }

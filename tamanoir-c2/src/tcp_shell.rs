@@ -110,11 +110,13 @@ impl TcpShell {
         let rx_tx_map_clone = self.rx_tx_map.clone();
 
         // change session shell_availability state to true
-        let mut current_sessions = self.session_store.sessions.lock().await;
-        let current_session = current_sessions
-            .get_mut(&Ipv4Addr::from_str(&ip).unwrap())
-            .unwrap();
-        current_session.set_shell_availibility(true);
+        {
+            let mut current_sessions = self.session_store.sessions.lock().await;
+            let current_session = current_sessions
+                .get_mut(&Ipv4Addr::from_str(&ip).unwrap())
+                .unwrap();
+            current_session.set_shell_availibility(true);
+        }
 
         let sessions_store = self.session_store.sessions.clone();
         let read_task = tokio::spawn(async move {

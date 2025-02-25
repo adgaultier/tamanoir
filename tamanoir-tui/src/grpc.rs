@@ -17,8 +17,7 @@ use crate::{
     tamanoir_grpc::{
         rce_client::RceClient, remote_shell_client::RemoteShellClient,
         session_client::SessionClient, Empty, SessionRcePayload, SessionRequest, SessionResponse,
-        SetSessionLayoutRequest, SetSessionRceRequest, ShellStatusEnum, ShellStatusResponse,
-        ShellStd,
+        SetSessionLayoutRequest, SetSessionRceRequest, ShellStd,
     },
 };
 
@@ -78,28 +77,12 @@ impl RemoteShellServiceClient {
             message: cmd.clone(),
         };
         let msg = Request::new(shell_msg);
-        match self
-            .client
-            .shell_status(Request::new(SessionRequest { ip: ip.to_string() }))
-            .await?
-            .into_inner()
-        {
-            ShellStatusResponse { status: 1 } => {
-                let _ = self.client.send_shell_std_in(msg).await?;
-                Ok(())
-            }
-            _ => Err("Shell Unavailable".into()),
-        }
+
+        let _ = self.client.send_shell_std_in(msg).await?;
+
+        Ok(())
     }
 
-    pub async fn shell_status(&mut self, session_id: String) -> anyhow::Result<ShellStatusEnum> {
-        Ok(self
-            .client
-            .shell_status(Request::new(SessionRequest { ip: session_id }))
-            .await?
-            .into_inner()
-            .status())
-    }
     pub async fn shell_close(&mut self, session_id: String) -> AppResult<()> {
         let _ = self
             .client
