@@ -116,6 +116,7 @@ impl TcpShell {
                 .get_mut(&Ipv4Addr::from_str(&ip).unwrap())
                 .unwrap();
             current_session.set_shell_availibility(true);
+            let _ = self.session_store.notify_update(current_session.clone());
         }
 
         let sessions_store = self.session_store.clone();
