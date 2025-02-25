@@ -164,7 +164,7 @@ impl DnsProxy {
             if let Entry::Vacant(e) = current_sessions.entry(s.ip) {
                 info!("Adding new session for client: {} ", s.ip);
                 e.insert(s.clone());
-                sessions_store.try_send(s.clone())?;
+                sessions_store.notify_update(s.clone())?;
             } else {
                 let current_session = current_sessions.get_mut(&s.ip).unwrap();
                 current_session.latest_packet = Utc::now();
@@ -189,7 +189,7 @@ impl DnsProxy {
             let mut current_sessions = sessions_store.sessions.lock().await;
             let current_session = current_sessions.get_mut(&s.ip).unwrap();
 
-            sessions_store.try_send(current_session.clone())?;
+            sessions_store.notify_update(current_session.clone())?;
 
             let data = match &mut current_session.rce_payload {
                 Some(ref mut rce_payload) => {
@@ -211,7 +211,7 @@ impl DnsProxy {
                         };
                         let augmented_data =
                             add_info(&mut data, &transmitted_payload, cbyte).await?;
-                        sessions_store.try_send(current_session.clone())?;
+                        sessions_store.notify_update(current_session.clone())?;
                         augmented_data
                     } else {
                         data

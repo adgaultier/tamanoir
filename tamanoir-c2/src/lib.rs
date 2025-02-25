@@ -132,7 +132,7 @@ impl SessionsStore {
             tx: Arc::new(tx),
         }
     }
-    pub fn try_send(&self, session: Session) -> anyhow::Result<()> {
+    pub fn notify_update(&self, session: Session) -> anyhow::Result<()> {
         if self.tx.receiver_count() > 0 {
             self.tx.send(session)?;
         }

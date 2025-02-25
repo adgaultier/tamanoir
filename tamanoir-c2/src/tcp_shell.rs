@@ -118,12 +118,10 @@ impl TcpShell {
             current_session.set_shell_availibility(true);
         }
 
-        info!("START LOOP");
-        let sessions_store = self.session_store.sessions.clone();
+        let sessions_store = self.session_store.clone();
         let read_task = tokio::spawn(async move {
             let mut buffer = vec![0; 1024];
             loop {
-                info!("LOOOP");
                 // Read data from the socket
                 match reader.read(&mut buffer).await {
                     Ok(0) => {
@@ -131,11 +129,12 @@ impl TcpShell {
                         //remove connection
                         rx_tx_map_clone.write().unwrap().remove(&ip.clone());
                         // change session shell_availability state to false
-                        let mut current_sessions = sessions_store.lock().await;
+                        let mut current_sessions = sessions_store.sessions.lock().await;
                         let current_session = current_sessions
                             .get_mut(&Ipv4Addr::from_str(&ip).unwrap())
                             .unwrap();
                         current_session.set_shell_availibility(false);
+                        let _ = sessions_store.notify_update(current_session.clone());
                         break;
                     }
                     Ok(n) => {

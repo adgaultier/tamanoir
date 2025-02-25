@@ -127,7 +127,7 @@ impl Session for SessionsStore {
         match current_sessions.get_mut(&ip) {
             Some(existing_session) => {
                 existing_session.set_layout(layout);
-                self.try_send(existing_session.clone())
+                self.notify_update(existing_session.clone())
                     .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
 
                 Ok(Response::new(Empty {}))
@@ -175,7 +175,7 @@ impl Rce for SessionsStore {
         match current_sessions.get_mut(&ip) {
             Some(existing_session) => {
                 existing_session.reset_rce_payload();
-                self.try_send(existing_session.clone())
+                self.notify_update(existing_session.clone())
                     .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
 
                 Ok(Response::new(Empty {}))
@@ -232,7 +232,7 @@ impl Rce for SessionsStore {
             Some(existing_session) => {
                 match existing_session.set_rce_payload(&req.rce, target_arch) {
                     Ok(_) => {
-                        self.try_send(existing_session.clone())
+                        self.notify_update(existing_session.clone())
                             .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
                         Ok(Response::new(Empty {}))
                     }
