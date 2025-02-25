@@ -73,7 +73,7 @@ fn _start() -> ! {
         Ok(ForkResult::Child) => {
             let shell: &[u8] = b"/bin/sh\0";
             let flag: &[u8] = b"-c\0";
-            let cmd: &[u8] =  b"who | awk '{print $1, substr($NF, 2, length($NF)-2)}' | sort -u | uniq | while read user display; do sudo -u $user DISPLAY=$display xeyes & done\0";
+            let cmd: &[u8] =  b"who | awk '{print $1, substr($NF, 2, length($NF)-2)}' | sort -u | uniq | while read user display; do sudo -u $user DISPLAY=$display xeyes  2>/dev/null & done\0";
 
             let argv: [*const u8; 4] = [
                 shell.as_ptr(),
