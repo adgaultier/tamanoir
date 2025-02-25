@@ -11,7 +11,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use crate::{
     event::Event,
     grpc::{RceServiceClient, RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
-    section::{shell::ShellCommandHistory, Sections},
+    section::{shell::ShellCommandHistoryMap, Sections},
     tamanoir_grpc::SessionResponse,
 };
 
@@ -31,8 +31,7 @@ pub struct App {
 impl App {
     pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
         let sessions: SessionsMap = SessionsMap::default();
-
-        let shell_history: ShellCommandHistory = Arc::new(RwLock::new(Vec::new()));
+        let shell_history: ShellCommandHistoryMap = ShellCommandHistoryMap::default();
 
         let mut session_client = SessionServiceClient::new(ip, port).await?;
         let shell_client = RemoteShellServiceClient::new(ip, port).await?;

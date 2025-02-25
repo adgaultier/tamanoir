@@ -1,6 +1,7 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
-    net::SocketAddr,
+    net::{Ipv4Addr, SocketAddr},
+    str::FromStr,
     sync::{Arc, RwLock},
 };
 
@@ -12,7 +13,7 @@ use tokio::{
     sync::{broadcast, mpsc, Mutex},
 };
 
-use crate::tamanoir_grpc::ShellStd;
+use crate::{tamanoir_grpc::ShellStd, SessionsStore};
 type ShellStdOutWatcher = Arc<broadcast::Sender<ShellStd>>;
 type ShellStdInTx = Arc<mpsc::Sender<ShellStd>>;
 type ShellStdInRx = Arc<Mutex<mpsc::Receiver<ShellStd>>>;
@@ -37,15 +38,17 @@ pub struct TcpShell {
     pub port: u16,
     pub stdout_broadcast_tx: ShellStdOutWatcher,
     pub rx_tx_map: Arc<RwLock<HashMap<String, RxTxContainer>>>,
+    pub session_store: SessionsStore,
 }
 
 impl TcpShell {
-    pub fn new(port: u16) -> Self {
+    pub fn new(port: u16, session_store: SessionsStore) -> Self {
         let (stdout_broadcast_tx, _) = broadcast::channel(16);
         TcpShell {
             port,
             stdout_broadcast_tx: Arc::new(stdout_broadcast_tx),
             rx_tx_map: Arc::new(RwLock::new(HashMap::new())),
+            session_store,
         }
     }
     fn try_send(
@@ -60,6 +63,9 @@ impl TcpShell {
             })?;
         }
         Ok(())
+    }
+    pub fn shell_available(&self, ip: String) -> bool {
+        self.get_rx_tx(ip).is_ok()
     }
     pub fn get_rx_tx(&self, ip: String) -> Result<RxTxContainer, String> {
         Ok(self
@@ -102,6 +108,15 @@ impl TcpShell {
         });
 
         let rx_tx_map_clone = self.rx_tx_map.clone();
+
+        // change session shell_availability state to true
+        let mut current_sessions = self.session_store.sessions.lock().await;
+        let current_session = current_sessions
+            .get_mut(&Ipv4Addr::from_str(&ip).unwrap())
+            .unwrap();
+        current_session.set_shell_availibility(true);
+
+        let sessions_store = self.session_store.sessions.clone();
         let read_task = tokio::spawn(async move {
             let mut buffer = vec![0; 1024];
             loop {
@@ -109,7 +124,14 @@ impl TcpShell {
                 match reader.read(&mut buffer).await {
                     Ok(0) => {
                         info!("Connection closed by client: {}", addr);
-                        rx_tx_map_clone.write().unwrap().remove(&ip.clone()); //remove connection
+                        //remove connection
+                        rx_tx_map_clone.write().unwrap().remove(&ip.clone());
+                        // change session shell_availability state to false
+                        let mut current_sessions = sessions_store.lock().await;
+                        let current_session = current_sessions
+                            .get_mut(&Ipv4Addr::from_str(&ip).unwrap())
+                            .unwrap();
+                        current_session.set_shell_availibility(false);
                         break;
                     }
                     Ok(n) => {

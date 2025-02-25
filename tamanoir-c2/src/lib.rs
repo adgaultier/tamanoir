@@ -45,6 +45,7 @@ pub struct Session {
     pub n_packets: usize,
     pub keyboard_layout: Layout,
     pub arch: TargetArch,
+    pub shell_availability: bool,
 }
 impl Session {
     pub fn new(sock_addr: SocketAddr, arch: TargetArch) -> Option<Self> {
@@ -59,6 +60,7 @@ impl Session {
                 n_packets: 1,
                 keyboard_layout: Layout::Azerty,
                 arch,
+                shell_availability: false,
             }),
             _ => None,
         }
@@ -99,6 +101,9 @@ impl Session {
     }
     pub fn set_layout(&mut self, layout: Layout) {
         self.keyboard_layout = layout
+    }
+    pub fn set_shell_availibility(&mut self, availibility: bool) {
+        self.shell_availability = availibility;
     }
 }
 

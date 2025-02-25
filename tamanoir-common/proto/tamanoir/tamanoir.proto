@@ -25,6 +25,7 @@ message SessionResponse {
   uint32 n_packets=6;
   uint32 keyboard_layout=7;
   uint32 arch=8;
+  bool shell_availability= 9;
 }
 message SetSessionRceRequest {
   string ip=1;
@@ -48,14 +49,8 @@ message SetSessionLayoutRequest {
   uint32 layout = 2;
 }
 
-enum ShellStatusEnum {
-  Unavailable = 0;
-  Available = 1;
-}
 
-message ShellStatusResponse {
-  ShellStatusEnum status=1;
-}
+
 
 service Session {
   rpc ListSessions (Empty) returns ( ListSessionsResponse) {}
@@ -71,6 +66,6 @@ service Rce {
 service RemoteShell {
   rpc WatchShellStdOut (Empty) returns ( stream ShellStd) {}
   rpc SendShellStdIn (ShellStd) returns (Empty) {}
-  rpc ShellStatus (SessionRequest) returns (ShellStatusResponse) {}
+
   rpc ShellClose (SessionRequest) returns (Empty) {}
 }

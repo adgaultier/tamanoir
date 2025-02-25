@@ -12,7 +12,7 @@ use ratatui::{
     widgets::{Block, BorderType, Clear, Paragraph},
     Frame,
 };
-use shell::{Shell, ShellCommandHistory};
+use shell::ShellCommandHistoryMap;
 
 use crate::{
     app::{AppResult, SessionsMap},
@@ -31,25 +31,27 @@ pub enum FocusedSection {
 #[derive(Debug)]
 pub struct Sections {
     pub focused_section: FocusedSection,
-    pub shell_section: Shell,
-
     pub session_section: session::SessionSection,
     pub shell_percentage_split: Option<u16>,
 }
 
 impl Sections {
     pub async fn new(
-        shell_history: ShellCommandHistory,
+        shell_history_map: ShellCommandHistoryMap,
         sessions: SessionsMap,
         session_client: &mut SessionServiceClient,
         rce_client: &mut RceServiceClient,
     ) -> AppResult<Self> {
         Ok(Self {
             focused_section: FocusedSection::Sessions,
-            shell_section: Shell::new(shell_history),
 
-            session_section: session::SessionSection::new(sessions, session_client, rce_client)
-                .await?,
+            session_section: session::SessionSection::new(
+                sessions,
+                shell_history_map,
+                session_client,
+                rce_client,
+            )
+            .await?,
             shell_percentage_split: None,
         })
     }
@@ -74,7 +76,7 @@ impl Sections {
                         Span::from("Ctrl + :").bold().yellow(),
                         Span::from(" Scroll").yellow(),
                     ]);
-                    if self.shell_section.manual_scroll {
+                    if self.session_section.shell.manual_scroll {
                         base_message.extend([
                             Span::from(" | "),
                             Span::from("󱊷 :").bold().yellow(),
@@ -181,12 +183,15 @@ impl Sections {
             self.focused_section == FocusedSection::KeyLogger,
         );
         if let Some(shell_block) = shell_block {
-            self.shell_section.render(
-                frame,
-                shell_block,
-                self.focused_section == FocusedSection::Shell,
-                self.shell_available(),
-            );
+            if let Some(session_id) = &self.session_section.selected_session {
+                self.session_section.shell.render(
+                    frame,
+                    shell_block,
+                    self.focused_section == FocusedSection::Shell,
+                    session_id.ip.clone(),
+                    self.shell_available(),
+                );
+            }
         }
         if self.focused_section == FocusedSection::Sessions && self.session_section.edition_mode {
             let popup_block = main_block.inner(Margin {
@@ -202,11 +207,15 @@ impl Sections {
     pub async fn handle_mouse(&mut self, mouse_event: MouseEvent) -> AppResult<()> {
         match mouse_event.kind {
             MouseEventKind::ScrollUp => match self.focused_section {
-                FocusedSection::Shell if self.shell_available() => self.shell_section.scroll_up(),
+                FocusedSection::Shell if self.shell_available() => {
+                    self.session_section.shell.scroll_up()
+                }
                 _ => {}
             },
             MouseEventKind::ScrollDown => match self.focused_section {
-                FocusedSection::Shell if self.shell_available() => self.shell_section.scroll_down(),
+                FocusedSection::Shell if self.shell_available() => {
+                    self.session_section.shell.scroll_down()
+                }
                 _ => {}
             },
 
@@ -316,11 +325,13 @@ impl Sections {
                     _ => {}
                 },
                 FocusedSection::Shell if self.shell_available() => {
-                    self.shell_section
+                    self.session_section
+                        .shell
                         .handle_keys(
                             key_event,
                             shell_client,
-                            self.session_section.selected_session.clone(),
+                            rce_client,
+                            self.session_section.selected_session.clone().unwrap().ip,
                         )
                         .await?;
                 }
