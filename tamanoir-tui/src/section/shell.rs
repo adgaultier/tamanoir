@@ -148,18 +148,17 @@ impl SessionShellSection {
                 );
             }
         } else {
-            let message =
-                Paragraph::new(Line::from(Span::raw("SessionShellSection Not Connected")).bold())
-                    .centered()
-                    .block(
-                        Block::bordered()
-                            .border_type(BorderType::Rounded)
-                            .title(Span::styled(
-                                "Remote Shell",
-                                Style::default().fg(highlight_color).bold(),
-                            ))
-                            .border_style(Style::new().fg(highlight_color)),
-                    );
+            let message = Paragraph::new(Line::from(Span::raw("Not Connected")).bold())
+                .centered()
+                .block(
+                    Block::bordered()
+                        .border_type(BorderType::Rounded)
+                        .title(Span::styled(
+                            "Remote Shell",
+                            Style::default().fg(highlight_color).bold(),
+                        ))
+                        .border_style(Style::new().fg(highlight_color)),
+                );
             frame.render_widget(message, block);
         }
     }
