@@ -40,7 +40,7 @@ impl App {
         let sessions: SessionsMap = SessionsMap::default();
         let shell_history: ShellCommandHistoryMap = ShellCommandHistoryMap::default();
 
-        let mut session_client = SessionServiceClient::new(ip, port).await?;
+        let mut session_client = SessionServiceClient::new(ip, port, event_sender.clone()).await?;
         let shell_client = RemoteShellServiceClient::new(ip, port).await?;
         let mut rce_client = RceServiceClient::new(ip, port).await?;
 

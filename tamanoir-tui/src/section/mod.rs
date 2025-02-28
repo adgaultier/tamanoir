@@ -40,7 +40,7 @@ pub struct Sections {
 impl Sections {
     pub async fn new(
         shell_history_map: ShellCommandHistoryMap,
-        sessions: SessionsMap,
+        sessions_map: SessionsMap,
         session_client: &mut SessionServiceClient,
         rce_client: &mut RceServiceClient,
         notification_sender: NotificationSender,
@@ -49,7 +49,7 @@ impl Sections {
             focused_section: FocusedSection::Sessions,
 
             session_section: session::SessionSection::new(
-                sessions,
+                sessions_map,
                 shell_history_map,
                 session_client,
                 rce_client,
@@ -319,14 +319,13 @@ impl Sections {
                     }
 
                     KeyCode::Enter if self.session_section.is_editing() => {
-                        self
-                            .session_section
+                        self.session_section
                             .apply_change(session_client, rce_client)
                             .await?;
                     }
                     _ => {}
                 },
-                FocusedSection::KeyLogger => {},
+                FocusedSection::KeyLogger => {}
                 FocusedSection::Shell if self.shell_available() => {
                     self.session_section
                         .shell
