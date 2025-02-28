@@ -7,7 +7,7 @@ use std::{
 use tamanoir_common::Layout;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
-use tonic::{transport::Channel, Request};
+use tonic::{transport::Channel, Code, Request, Status};
 
 use crate::{
     app::{AppResult, SessionsMap},
@@ -33,11 +33,19 @@ pub struct SessionServiceClient {
 #[derive(Debug, Clone)]
 pub struct RemoteShellServiceClient {
     pub client: RemoteShellClient<Channel>,
+    pub notification_sender: NotificationSender,
 }
 
 #[derive(Debug, Clone)]
 pub struct RceServiceClient {
     pub client: RceClient<Channel>,
+    pub notification_sender: NotificationSender,
+}
+pub fn catch_grpc_err(e: Status, notification_sender: &NotificationSender) -> Status {
+    if e.code() == Code::Unavailable {
+        let _ = notification_sender.error("C2 server unreachable");
+    }
+    e
 }
 
 impl SessionServiceClient {
@@ -56,6 +64,7 @@ impl SessionServiceClient {
             },
         })
     }
+
     pub async fn list_sessions(&mut self) -> AppResult<Vec<SessionResponse>> {
         Ok(self
             .client
@@ -75,15 +84,26 @@ impl SessionServiceClient {
                 ip: session_ip,
                 layout: layout as u32,
             }))
-            .await?
-            .into_inner();
+            .await
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
+
         Ok(())
     }
 }
 impl RemoteShellServiceClient {
-    pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
+    pub async fn new(
+        ip: Ipv4Addr,
+        port: u16,
+        event_sender: mpsc::UnboundedSender<Event>,
+    ) -> AppResult<Self> {
         let client = RemoteShellClient::connect(format!("http://{}:{}", ip, port)).await?;
-        Ok(Self { client })
+        Ok(Self {
+            client,
+            notification_sender: NotificationSender {
+                sender: event_sender,
+                ttl: 3,
+            },
+        })
     }
     pub async fn send_cmd(&mut self, ip: String, cmd: String) -> AppResult<()> {
         let shell_msg = ShellStd {
@@ -92,25 +112,29 @@ impl RemoteShellServiceClient {
         };
         let msg = Request::new(shell_msg);
 
-        let _ = self.client.send_shell_std_in(msg).await?;
-
-        Ok(())
-    }
-
-    pub async fn shell_close(&mut self, session_id: String) -> AppResult<()> {
         let _ = self
             .client
-            .shell_close(Request::new(SessionRequest { ip: session_id }))
-            .await?
-            .into_inner();
+            .send_shell_std_in(msg)
+            .await
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
         Ok(())
     }
 }
 
 impl RceServiceClient {
-    pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
+    pub async fn new(
+        ip: Ipv4Addr,
+        port: u16,
+        event_sender: mpsc::UnboundedSender<Event>,
+    ) -> AppResult<Self> {
         let client = RceClient::connect(format!("http://{}:{}", ip, port)).await?;
-        Ok(Self { client })
+        Ok(Self {
+            client,
+            notification_sender: NotificationSender {
+                sender: event_sender,
+                ttl: 3,
+            },
+        })
     }
     pub async fn set_session_rce(
         &mut self,
@@ -124,22 +148,33 @@ impl RceServiceClient {
             rce,
             target_arch,
         };
-        self.client.set_session_rce(msg).await?;
+        let _ = self
+            .client
+            .set_session_rce(msg)
+            .await
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
 
         Ok(())
     }
     pub async fn delete_session_rce(&mut self, session_id: String) -> AppResult<()> {
-        self.client
+        let _ = self
+            .client
             .delete_session_rce(SessionRequest { ip: session_id })
-            .await?;
+            .await
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
         Ok(())
     }
     pub async fn list_available_rce(&mut self) -> anyhow::Result<Vec<SessionRcePayload>> {
-        let res = self
+        let ret: Result<tonic::Response<crate::tamanoir_grpc::AvailableRceResponse>, Status> = self
             .client
             .list_available_rce(Request::new(Empty {}))
-            .await?;
-        Ok(res.into_inner().rce_list)
+            .await
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
+        let res = match ret {
+            Ok(res) => res.into_inner().rce_list,
+            Err(_) => vec![],
+        };
+        Ok(res)
     }
 }
 pub trait StreamReceiver<T> {

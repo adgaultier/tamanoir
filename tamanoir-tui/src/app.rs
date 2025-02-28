@@ -41,8 +41,8 @@ impl App {
         let shell_history: ShellCommandHistoryMap = ShellCommandHistoryMap::default();
 
         let mut session_client = SessionServiceClient::new(ip, port, event_sender.clone()).await?;
-        let shell_client = RemoteShellServiceClient::new(ip, port).await?;
-        let mut rce_client = RceServiceClient::new(ip, port).await?;
+        let shell_client = RemoteShellServiceClient::new(ip, port, event_sender.clone()).await?;
+        let mut rce_client = RceServiceClient::new(ip, port, event_sender.clone()).await?;
 
         let mut shell_receiver = shell_client.clone();
         let mut session_receiver = session_client.clone();

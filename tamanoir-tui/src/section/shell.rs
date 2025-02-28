@@ -5,7 +5,7 @@ use std::{
 
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
-    layout::{Margin, Rect},
+    layout::{Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span},
     widgets::{
@@ -147,18 +147,20 @@ impl SessionShellSection {
                 );
             }
         } else {
-            let message = Paragraph::new(Line::from(Span::raw("Not Connected")).bold())
-                .centered()
-                .block(
-                    Block::bordered()
-                        .border_type(BorderType::Rounded)
-                        .title(Span::styled(
-                            "Remote Shell",
-                            Style::default().fg(highlight_color).bold(),
-                        ))
-                        .border_style(Style::new().fg(highlight_color)),
-                );
-            frame.render_widget(message, block);
+            let message = Paragraph::new(Line::from(Span::raw("Not Connected"))).centered();
+            let outer_block = Block::bordered()
+                .border_type(BorderType::Rounded)
+                .title(Span::styled(
+                    "Remote Shell",
+                    Style::default().fg(highlight_color).bold(),
+                ))
+                .border_style(Style::new().fg(highlight_color));
+            let inner_block = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Fill(1), Constraint::Max(1), Constraint::Fill(1)])
+                .split(block)[1];
+            frame.render_widget(outer_block, block);
+            frame.render_widget(message, inner_block);
         }
     }
     fn clear(&mut self) {

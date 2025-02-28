@@ -27,13 +27,17 @@ async fn main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
-    let mut app = App::new(ip, port, tui.events.sender.clone()).await?;
-
-    while app.running {
-        tui.draw(&mut app)?;
-        let event = tui.events.next().await?;
-        app.handle_tui_event(event).await?;
+    let maybe_app = App::new(ip, port, tui.events.sender.clone()).await;
+    if let Ok(mut app) = maybe_app {
+        while app.running {
+            tui.draw(&mut app)?;
+            let event = tui.events.next().await?;
+            app.handle_tui_event(event).await?;
+        }
+        tui.exit()?;
+    } else {
+        tui.exit()?;
+        println!("Error Starting App, check if C2 server is reachable");
     }
-    tui.exit()?;
     Ok(())
 }

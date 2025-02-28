@@ -7,9 +7,9 @@ use std::fmt::Display;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Margin, Rect},
-    style::{Color, Style, Stylize},
+    style::Stylize,
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Clear, Paragraph},
+    widgets::Clear,
     Frame,
 };
 use shell::ShellCommandHistoryMap;
@@ -62,69 +62,71 @@ impl Sections {
     }
 
     fn render_footer_help(&self, frame: &mut Frame, block: Rect) {
-        let message = {
-            let mut base_message = vec![
-                Span::from(" ").bold(),
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Min(1), Constraint::Fill(1), Constraint::Min(1)])
+            .split(block.inner(Margin {
+                horizontal: 2,
+                vertical: 0,
+            }));
+        let base_message = if self.session_section.is_editing() {
+            Vec::new()
+        } else {
+            vec![
+                Span::from(" :").bold(),
                 Span::from(" Nav"),
                 Span::from(" | "),
                 Span::from("Ctrl + s:").bold(),
                 Span::from(" (Un)Toggle Shell"),
-            ];
-
-            match self.focused_section {
-                FocusedSection::Shell => {
-                    base_message.extend([
-                        Span::from(" | "),
-                        Span::from("󰘶 + :").bold().yellow(),
-                        Span::from(" Resize shell").yellow(),
-                        Span::from(" | "),
-                        Span::from("Ctrl + :").bold().yellow(),
-                        Span::from(" Scroll").yellow(),
-                    ]);
-                    if self.session_section.shell.manual_scroll {
-                        base_message.extend([
-                            Span::from(" | "),
-                            Span::from("󱊷 :").bold().yellow(),
-                            Span::from(" Exit scroll mode").yellow(),
-                        ])
-                    }
-                }
-                FocusedSection::Sessions => {
-                    if self.session_section.is_editing() {
-                        base_message.extend([
-                            Span::from(" | "),
-                            Span::from(" 󱊷 :").bold().yellow(),
-                            Span::from(" Exit Edit Mode").yellow(),
-                            Span::from(" | "),
-                            Span::from(" :").bold().yellow(),
-                            Span::from(" Switch Edit Section").yellow(),
-                            Span::from(" | "),
-                            Span::from("󰌑 :").bold().yellow(),
-                            Span::from(" Apply Change").yellow(),
-                        ]);
-                    } else {
-                        base_message.extend([
-                            Span::from(" | "),
-                            Span::from("e:").bold().yellow(),
-                            Span::from(" Edit Mode").yellow(),
-                        ]);
-                    }
-                }
-                _ => {}
-            }
-
-            base_message
+            ]
         };
 
-        let help = Text::from(vec![Line::from(message)]).blue().centered();
-
+        let contextual_msg = match self.focused_section {
+            FocusedSection::Shell => {
+                let mut msg = vec![
+                    Span::from("󰘶 + :").bold().yellow(),
+                    Span::from(" Resize shell").yellow(),
+                    Span::from(" | "),
+                    Span::from("Ctrl + :").bold().yellow(),
+                    Span::from(" Scroll").yellow(),
+                ];
+                if self.session_section.shell.manual_scroll {
+                    msg.extend([
+                        Span::from(" | "),
+                        Span::from("󱊷 :").bold().yellow(),
+                        Span::from(" Exit scroll mode").yellow(),
+                    ])
+                }
+                msg
+            }
+            FocusedSection::Sessions => {
+                if self.session_section.is_editing() {
+                    vec![
+                        Span::from(" 󱊷 :").bold().yellow(),
+                        Span::from(" Exit Edit Mode").yellow(),
+                        Span::from(" | "),
+                        Span::from(" :").bold().yellow(),
+                        Span::from(" Switch Edit Section").yellow(),
+                        Span::from(" | "),
+                        Span::from("󰌑 :").bold().yellow(),
+                        Span::from(" Apply").yellow(),
+                    ]
+                } else {
+                    vec![
+                        Span::from("󰌑 :").bold().yellow(),
+                        Span::from(" Edit Mode").yellow(),
+                    ]
+                }
+            }
+            _ => Vec::new(),
+        };
         frame.render_widget(
-            Paragraph::new(help).centered().block(
-                Block::bordered()
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(Color::Blue)),
-            ),
-            block,
+            Text::from(vec![Line::from(base_message)]).left_aligned(),
+            chunks[0],
+        );
+        frame.render_widget(
+            Text::from(vec![Line::from(contextual_msg)]).right_aligned(),
+            chunks[2],
         );
     }
 
@@ -138,8 +140,7 @@ impl Sections {
         let (main_block, help_block) = {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Fill(1), Constraint::Length(3)])
-                //.flex(ratatui::layout::Flex::)
+                .constraints([Constraint::Fill(1), Constraint::Length(1)])
                 .split(frame.area());
 
             (chunks[0], chunks[1])
@@ -148,7 +149,6 @@ impl Sections {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Length(7), Constraint::Fill(1)])
-                //.flex(ratatui::layout::Flex::Start)
                 .split(main_block);
             (chunks[0], chunks[1])
         };
@@ -167,7 +167,6 @@ impl Sections {
                     let chunks = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints([Constraint::Fill(1), Constraint::Percentage(k)])
-                        //.flex(ratatui::layout::Flex::Center)
                         .split(main_block);
                     (chunks[0], Some(chunks[1]))
                 }
@@ -175,7 +174,6 @@ impl Sections {
                     let chunks = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints([Constraint::Fill(1)])
-                        //.flex(ratatui::layout::Flex::SpaceBetween)
                         .split(main_block);
                     (chunks[0], None)
                 }
@@ -199,10 +197,7 @@ impl Sections {
             }
         }
         if self.focused_section == FocusedSection::Sessions && self.session_section.edition_mode {
-            let popup_block = main_block.inner(Margin {
-                horizontal: 3,
-                vertical: 3,
-            });
+            let popup_block = main_block;
             frame.render_widget(Clear, popup_block);
 
             self.session_section
@@ -279,7 +274,10 @@ impl Sections {
                     }
                 }
             }
-            KeyCode::Char('s') if key_event.modifiers == KeyModifiers::CONTROL => {
+            KeyCode::Char('s')
+                if key_event.modifiers == KeyModifiers::CONTROL
+                    && !self.session_section.is_editing() =>
+            {
                 if self.shell_percentage_split.is_some() {
                     self.shell_percentage_split = None;
                     if self.focused_section == FocusedSection::Shell {
@@ -311,13 +309,16 @@ impl Sections {
                 FocusedSection::Sessions => match key_event.code {
                     KeyCode::Char('j') | KeyCode::Down => self.session_section.next_item(),
                     KeyCode::Char('k') | KeyCode::Up => self.session_section.previous_item(),
-                    KeyCode::Char('e') if self.session_section.selected_session.is_some() => {
-                        self.session_section.edition_mode = true;
-                    }
+
                     KeyCode::Esc if self.session_section.is_editing() => {
                         self.session_section.edition_mode = false;
                     }
-
+                    KeyCode::Enter
+                        if self.session_section.selected_session.is_some()
+                            && !self.session_section.is_editing() =>
+                    {
+                        self.session_section.edition_mode = true;
+                    }
                     KeyCode::Enter if self.session_section.is_editing() => {
                         self.session_section
                             .apply_change(session_client, rce_client)
