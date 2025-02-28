@@ -23,6 +23,12 @@ pub struct RxTxContainer {
     pub stdin_rx: ShellStdInRx,
     pub stdin_tx: ShellStdInTx,
 }
+impl Default for RxTxContainer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RxTxContainer {
     pub fn new() -> Self {
         let (tx, rx) = channel::<ShellStd>(16);
@@ -57,10 +63,7 @@ impl TcpShell {
         msg: String,
     ) -> anyhow::Result<()> {
         if stdout_broadcast_tx.receiver_count() > 0 {
-            stdout_broadcast_tx.send(ShellStd {
-                ip: ip,
-                message: msg,
-            })?;
+            stdout_broadcast_tx.send(ShellStd { ip, message: msg })?;
         }
         Ok(())
     }
@@ -142,8 +145,8 @@ impl TcpShell {
                         let received = String::from_utf8_lossy(&buffer[..n]);
                         debug!("Stdout Received: {}", received);
 
-                        if let Err(_) =
-                            Self::try_send(ip.clone(), broadcast_tx.clone(), received.into())
+                        if Self::try_send(ip.clone(), broadcast_tx.clone(), received.into())
+                            .is_err()
                         {
                             error!("error sending stdout message");
                             break;

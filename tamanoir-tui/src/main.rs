@@ -27,7 +27,7 @@ async fn main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
-    let mut app = App::new(ip, port).await?;
+    let mut app = App::new(ip, port, tui.events.sender.clone()).await?;
 
     while app.running {
         tui.draw(&mut app)?;

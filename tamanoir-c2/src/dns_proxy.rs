@@ -149,15 +149,12 @@ impl DnsProxy {
             "couldn't parse addr for session {}",
             addr
         )))?;
-        match s.ip.octets() {
-            [127, 0, 0, 1] => {
-                // just forward hypotetical localhost queries
-                if let Ok(data) = forward_req(&Vec::from(buf), self.forward_ip).await {
-                    let _ = sock.send_to(&data, addr).await?;
-                    return Ok(());
-                }
+        if let [127, 0, 0, 1] = s.ip.octets() {
+            // just forward hypotetical localhost queries
+            if let Ok(data) = forward_req(&Vec::from(buf), self.forward_ip).await {
+                let _ = sock.send_to(&data, addr).await?;
+                return Ok(());
             }
-            _ => {}
         };
         {
             let mut current_sessions = sessions_store.sessions.lock().await;

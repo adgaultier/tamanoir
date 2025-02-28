@@ -104,7 +104,7 @@ impl KeyMap {
     }
 }
 
-pub fn parse_keycodes(key_codes: &Vec<u32>, layout: Layout) -> AppResult<Vec<String>> {
+pub fn parse_keycodes(key_codes: &[u32], layout: Layout) -> AppResult<Vec<String>> {
     let mut parsed_keys: Vec<String> = vec![];
 
     let key_map = KEYMAPS

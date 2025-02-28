@@ -3,7 +3,7 @@ pub mod dns_proxy;
 pub mod grpc;
 pub mod rce;
 pub mod tcp_shell;
-use chrono::{DateTime, Utc};
+
 pub mod tamanoir_grpc {
     tonic::include_proto!("tamanoir");
 }
@@ -15,6 +15,7 @@ use std::{
     sync::Arc,
 };
 
+use chrono::{DateTime, Utc};
 use home::home_dir;
 use serde::Deserialize;
 use tamanoir_common::{Layout, TargetArch};
@@ -69,7 +70,7 @@ impl Session {
         self.rce_payload = None;
     }
     pub fn set_rce_payload(&mut self, rce: &str, target_arch: TargetArch) -> Result<(), String> {
-        if let Some(_) = self.rce_payload {
+        if self.rce_payload.is_some() {
             return Err(format!(
                 "An rce payload already exists for session {}",
                 self.ip
@@ -124,6 +125,12 @@ pub struct SessionsStore {
     pub sessions: SessionsState,
     pub tx: SessionsStateWatcher,
 }
+impl Default for SessionsStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SessionsStore {
     pub fn new() -> Self {
         let (tx, _) = broadcast::channel(16);

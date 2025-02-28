@@ -65,7 +65,7 @@ impl SessionShellSection {
             .get(&session_id)
             .unwrap()
             .iter()
-            .filter(|cmd| cmd.entry_type == ShellHistoryEntryType::Command && cmd.text.len() > 0)
+            .filter(|cmd| cmd.entry_type == ShellHistoryEntryType::Command && !cmd.text.is_empty())
             .map(|cmd| cmd.text.clone())
             .collect::<Vec<String>>()
     }
@@ -89,18 +89,17 @@ impl SessionShellSection {
             let mut text: Vec<Line> = if let Some(session_history) = history.get(&session_id) {
                 session_history
                     .iter()
-                    .map(|entry| match entry.entry_type {
+                    .flat_map(|entry| match entry.entry_type {
                         ShellHistoryEntryType::Command => {
                             vec![Line::from(Span::raw(format!("$ {}", entry.text)).bold())]
                         }
                         ShellHistoryEntryType::Response => entry
                             .text
                             .split('\n')
-                            .filter(|s| s.len() > 0)
+                            .filter(|s| !s.is_empty())
                             .map(Line::from)
                             .collect(),
                     })
-                    .flatten()
                     .collect()
             } else {
                 vec![]
@@ -193,7 +192,7 @@ impl SessionShellSection {
         match key_event.code {
             KeyCode::Enter => {
                 let command = self.prompt.value();
-                if command.to_string() == "clear" {
+                if command == "clear" {
                     self.clear();
                 } else {
                     if shell_client
@@ -210,7 +209,7 @@ impl SessionShellSection {
                             session_history.push(ShellCommandEntry {
                                 text: command.to_string(),
                                 entry_type: ShellHistoryEntryType::Command,
-                                session_id: session_id,
+                                session_id,
                             })
                         };
                     } else {

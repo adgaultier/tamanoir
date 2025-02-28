@@ -7,10 +7,12 @@ use std::{
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyModifiers};
+use tokio::sync::mpsc;
 
 use crate::{
     event::Event,
     grpc::{RceServiceClient, RemoteShellServiceClient, SessionServiceClient, StreamReceiver},
+    notification::{Notification, NotificationSender},
     section::{shell::ShellCommandHistoryMap, Sections},
     tamanoir_grpc::SessionResponse,
 };
@@ -26,10 +28,15 @@ pub struct App {
     pub shell_client: RemoteShellServiceClient,
     pub session_client: SessionServiceClient,
     pub rce_client: RceServiceClient,
+    pub notifications: Vec<Notification>,
 }
 
 impl App {
-    pub async fn new(ip: Ipv4Addr, port: u16) -> AppResult<Self> {
+    pub async fn new(
+        ip: Ipv4Addr,
+        port: u16,
+        event_sender: mpsc::UnboundedSender<Event>,
+    ) -> AppResult<Self> {
         let sessions: SessionsMap = SessionsMap::default();
         let shell_history: ShellCommandHistoryMap = ShellCommandHistoryMap::default();
 
@@ -39,12 +46,16 @@ impl App {
 
         let mut shell_receiver = shell_client.clone();
         let mut session_receiver = session_client.clone();
-
+        let notification_sender = NotificationSender {
+            ttl: 3,
+            sender: event_sender,
+        };
         let sections = Sections::new(
             shell_history.clone(),
             sessions.clone(),
             &mut session_client,
             &mut rce_client,
+            notification_sender,
         )
         .await?;
 
@@ -62,6 +73,7 @@ impl App {
             shell_client,
             session_client,
             rce_client,
+            notifications: Vec::new(),
         })
     }
     pub async fn handle_tui_event(&mut self, event: Event) -> AppResult<()> {
@@ -84,9 +96,23 @@ impl App {
                 }
             },
             Event::Mouse(mouse_event) => self.sections.handle_mouse(mouse_event).await?,
+            Event::Notification(notification) => {
+                self.notifications.push(notification);
+            }
+            Event::Tick => {
+                self.notifications.iter_mut().for_each(|n| n.ttl -= 1);
+                self.notifications.retain(|n| n.ttl > 0);
+            }
             _ => {}
         }
         Ok(())
+    }
+
+    pub fn render(&mut self, frame: &mut ratatui::Frame) {
+        self.sections.render(frame);
+        for (index, notification) in self.notifications.iter().enumerate() {
+            notification.render(index, frame);
+        }
     }
     pub fn quit(&mut self) {
         self.running = false;

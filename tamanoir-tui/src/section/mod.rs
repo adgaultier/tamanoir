@@ -17,6 +17,7 @@ use shell::ShellCommandHistoryMap;
 use crate::{
     app::{AppResult, SessionsMap},
     grpc::{RceServiceClient, RemoteShellServiceClient, SessionServiceClient},
+    notification::NotificationSender,
     tamanoir_grpc::SessionResponse,
 };
 
@@ -33,6 +34,7 @@ pub struct Sections {
     pub focused_section: FocusedSection,
     pub session_section: session::SessionSection,
     pub shell_percentage_split: Option<u16>,
+    pub notification_sender: NotificationSender,
 }
 
 impl Sections {
@@ -41,6 +43,7 @@ impl Sections {
         sessions: SessionsMap,
         session_client: &mut SessionServiceClient,
         rce_client: &mut RceServiceClient,
+        notification_sender: NotificationSender,
     ) -> AppResult<Self> {
         Ok(Self {
             focused_section: FocusedSection::Sessions,
@@ -50,9 +53,11 @@ impl Sections {
                 shell_history_map,
                 session_client,
                 rce_client,
+                notification_sender.clone(),
             )
             .await?,
             shell_percentage_split: None,
+            notification_sender,
         })
     }
 
@@ -314,16 +319,14 @@ impl Sections {
                     }
 
                     KeyCode::Enter if self.session_section.is_editing() => {
-                        let _ = self
+                        self
                             .session_section
                             .apply_change(session_client, rce_client)
                             .await?;
                     }
                     _ => {}
                 },
-                FocusedSection::KeyLogger => match key_event.code {
-                    _ => {}
-                },
+                FocusedSection::KeyLogger => {},
                 FocusedSection::Shell if self.shell_available() => {
                     self.session_section
                         .shell

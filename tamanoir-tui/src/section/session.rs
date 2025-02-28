@@ -11,6 +11,7 @@ use super::shell::{SessionShellSection, ShellCommandHistoryMap};
 use crate::{
     app::{AppResult, SessionsMap},
     grpc::{RceServiceClient, SessionServiceClient},
+    notification::NotificationSender,
     tamanoir_grpc::{SessionRcePayload, SessionResponse},
 };
 
@@ -23,6 +24,7 @@ pub struct SessionSection {
     pub edition_mode: bool,
     edit_section: SessionEditSection,
     pub shell: SessionShellSection,
+    notification_sender: NotificationSender,
 }
 
 fn compute_payload_tx_pct(total_len: u32, remaining_len: u32) -> u8 {
@@ -35,6 +37,7 @@ impl SessionSection {
         shell_history_map: ShellCommandHistoryMap,
         session_client: &mut SessionServiceClient,
         rce_client: &mut RceServiceClient,
+        notification_sender: NotificationSender,
     ) -> AppResult<Self> {
         for s in session_client.list_sessions().await? {
             sessions_map.write().unwrap().insert(s.ip.clone(), s);
@@ -51,6 +54,7 @@ impl SessionSection {
             edition_mode: false,
             edit_section,
             shell,
+            notification_sender,
         })
     }
 
@@ -71,7 +75,9 @@ impl SessionSection {
                     let selected = self.edit_section.available_layouts[selected];
                     session_client
                         .update_session_layout(self.selected_session.clone().unwrap().ip, selected)
-                        .await
+                        .await?;
+                    self.notification_sender
+                        .info(format!("Layout set to {}", selected))?;
                 }
                 EditSubsection::RcePayload => {
                     if let Some(avail_payloads) = &self.edit_section.available_rce_payloads {
@@ -83,21 +89,22 @@ impl SessionSection {
                                     selected.name.clone(),
                                     selected.target_arch.clone(),
                                 )
-                                .await
+                                .await?;
+                            self.notification_sender
+                                .info(format!("Rce set to {}", selected.name))?;
                         } else {
                             rce_client
                                 .delete_session_rce(self.selected_session.clone().unwrap().ip)
-                                .await
+                                .await?;
+                            self.notification_sender.info("Rce deleted".to_string())?;
                         }
-                    } else {
-                        Ok(())
                     }
                 }
             }
-        } else {
-            Ok(())
-        }
+        };
+        Ok(())
     }
+
     pub fn next_item(&mut self) {
         if self.edition_mode {
             self.edit_section.scroll_down()
@@ -186,7 +193,7 @@ impl SessionSection {
 
                 let rows: Vec<Row> = match &self.edit_section.available_rce_payloads {
                     Some(payloads) => payloads
-                        .into_iter()
+                        .iter()
                         .map(|p| {
                             Row::new([
                                 Span::from(p.name.clone()),
@@ -399,8 +406,7 @@ enum EditSubsection {
 impl SessionEditSection {
     pub fn new(available_rce_payloads: Option<Vec<SessionRcePayload>>) -> Self {
         let available_layouts = KeyboardLayout::ALL;
-        let available_rce_payloads = match available_rce_payloads {
-            Some(mut avail_payloads) => Some({
+        let available_rce_payloads = available_rce_payloads.map(|mut avail_payloads| {
                 avail_payloads.extend_from_slice(&[SessionRcePayload {
                     name: "-".into(),
                     target_arch: "(will reset any payload transmission)".into(),
@@ -408,9 +414,7 @@ impl SessionEditSection {
                     buffer_length: 0,
                 }]);
                 avail_payloads
-            }),
-            None => None,
-        };
+            });
         Self {
             editing_section: EditSubsection::KeyboardLayout,
 
@@ -458,7 +462,7 @@ impl SessionEditSection {
         self.next_edit_section()
     }
     pub fn scroll_down(&mut self) {
-        let n_options = self.n_options().clone();
+        let n_options = self.n_options();
         let state = self.state();
         let i = match state.selected() {
             Some(i) => {

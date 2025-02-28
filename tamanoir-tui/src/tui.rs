@@ -38,7 +38,7 @@ impl<B: Backend> Tui<B> {
     }
 
     pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
-        self.terminal.draw(|frame| app.sections.render(frame))?;
+        self.terminal.draw(|frame| app.render(frame))?;
         Ok(())
     }
 

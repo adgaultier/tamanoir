@@ -49,21 +49,19 @@ impl Session for SessionsStore {
         let current_sessions = self.sessions.lock().await;
 
         let mut sessions: Vec<SessionResponse> = vec![];
-        for s in current_sessions.values().into_iter() {
-            let rce_payload: Option<SessionRcePayload> = match &s.rce_payload {
-                Some(payload) => Some(SessionRcePayload {
+        for s in current_sessions.values() {
+            let rce_payload: Option<SessionRcePayload> =
+                s.rce_payload.as_ref().map(|payload| SessionRcePayload {
                     name: payload.name.clone(),
                     target_arch: payload.target_arch.to_string(),
                     length: payload.length as u32,
                     buffer_length: payload.buffer.len() as u32,
-                }),
-                _ => None,
-            };
+                });
             let session_ip = s.ip.to_string();
             sessions.push(SessionResponse {
                 ip: session_ip.clone(),
                 key_codes: s.key_codes.iter().map(|byte| *byte as u32).collect(),
-                rce_payload: rce_payload,
+                rce_payload,
                 first_packet: s.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                 latest_packet: s.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                 n_packets: s.n_packets as u32,
@@ -97,7 +95,7 @@ impl Session for SessionsStore {
                 yield SessionResponse {
                     ip: session_ip,
                     key_codes: session.key_codes.iter().map(|byte| *byte as u32).collect(),
-                    rce_payload: rce_payload,
+                    rce_payload,
                     first_packet:  session.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                     latest_packet: session.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
                     n_packets:session.n_packets as u32,
@@ -199,7 +197,7 @@ impl Rce for SessionsStore {
                 let path = format!("{}", entry.path().display());
                 if let Some((name, arch)) = extract_rce_metadata(path) {
                     rce_list.push(SessionRcePayload {
-                        name: name,
+                        name,
                         target_arch: arch.to_string(),
                         buffer_length: 0,
                         length: 0,
@@ -304,16 +302,13 @@ impl RemoteShell for TcpShell {
             request.remote_addr()
         );
         let req = request.into_inner();
-        match self.get_rx_tx(req.ip.clone()) {
-            Ok(_) => {
-                self.rx_tx_map.write().unwrap().remove(&req.ip.clone());
-                let mut current_sessions = self.session_store.sessions.lock().await;
-                let current_session = current_sessions
-                    .get_mut(&Ipv4Addr::from_str(&req.ip.clone()).unwrap())
-                    .unwrap();
-                current_session.set_shell_availibility(false);
-            }
-            _ => {}
+        if self.get_rx_tx(req.ip.clone()).is_ok() {
+            self.rx_tx_map.write().unwrap().remove(&req.ip.clone());
+            let mut current_sessions = self.session_store.sessions.lock().await;
+            let current_session = current_sessions
+                .get_mut(&Ipv4Addr::from_str(&req.ip.clone()).unwrap())
+                .unwrap();
+            current_session.set_shell_availibility(false);
         }
         Ok(Response::new(Empty {}))
     }

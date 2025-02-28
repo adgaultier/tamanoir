@@ -4,7 +4,7 @@ use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 
-use crate::app::AppResult;
+use crate::{app::AppResult, notification::Notification};
 
 #[derive(Clone, Debug)]
 pub enum Event {
@@ -12,6 +12,7 @@ pub enum Event {
     Key(KeyEvent),
     Mouse(MouseEvent),
     Resize(u16, u16),
+    Notification(Notification),
 }
 
 #[allow(dead_code)]
