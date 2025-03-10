@@ -5,7 +5,9 @@ use std::{
     sync::OnceLock,
 };
 
-use crate::{CargoMetadata, Engine, TargetArch};
+use tamanoir_common::{Engine, TargetArch};
+
+use crate::CargoMetadata;
 
 pub static UTILS_FILES: OnceLock<HashMap<String, &str>> = OnceLock::new();
 const BUILD_RS: &str = include_str!("../../../../assets/x_build_utils/build.rs");

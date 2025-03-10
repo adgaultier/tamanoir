@@ -1,5 +1,9 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
+#[cfg(feature = "std")]
+mod std_deps;
 
+#[cfg(feature = "std")]
+pub use std_deps::*;
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub enum ContinuationByte {
@@ -35,4 +39,12 @@ impl RceEvent {
     pub fn payload(&self) -> &[u8] {
         &self.prog[..self.length]
     }
+}
+#[cfg_attr(feature = "std", derive(serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq)]
+#[repr(C)]
+pub enum TargetArch {
+    X86_64 = 0,
+    Aarch64 = 1,
+    Unknown = 2,
 }

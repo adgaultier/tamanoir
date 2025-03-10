@@ -13,7 +13,7 @@ use crate::{app::AppResult, event::Event};
 pub struct Notification {
     pub message: String,
     pub level: NotificationLevel,
-    pub ttl: u8,
+    pub ttl: u16,
 }
 
 #[derive(Debug, Clone)]
@@ -26,9 +26,9 @@ pub enum NotificationLevel {
 impl Notification {
     pub fn render(&self, index: usize, frame: &mut Frame) {
         let (color, title) = match self.level {
-            NotificationLevel::Info => (Color::Green, "Info"),
-            NotificationLevel::Warning => (Color::Yellow, "Warning"),
-            NotificationLevel::Error => (Color::Red, "Error"),
+            NotificationLevel::Info => (Color::Green, "󰋼 "),
+            NotificationLevel::Warning => (Color::Yellow, " "),
+            NotificationLevel::Error => (Color::Red, " "),
         };
 
         let mut text = Text::from(vec![
@@ -47,7 +47,7 @@ impl Notification {
                 Block::default()
                     .borders(Borders::ALL)
                     .style(Style::default())
-                    .border_type(BorderType::Thick)
+                    .border_type(BorderType::Rounded)
                     .border_style(Style::default().fg(color)),
             );
 
@@ -61,25 +61,9 @@ impl Notification {
         frame.render_widget(Clear, area);
         frame.render_widget(block, area);
     }
-
-    pub fn send(
-        message: String,
-        level: NotificationLevel,
-        sender: mpsc::UnboundedSender<Event>,
-    ) -> AppResult<()> {
-        let notif = Notification {
-            message,
-            level,
-            ttl: 3,
-        };
-
-        sender.send(Event::Notification(notif))?;
-
-        Ok(())
-    }
 }
 
-pub fn notification_rect(offset: u16, height: u16, width: u16, r: Rect) -> Rect {
+fn notification_rect(offset: u16, height: u16, width: u16, r: Rect) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -103,4 +87,36 @@ pub fn notification_rect(offset: u16, height: u16, width: u16, r: Rect) -> Rect 
             .as_ref(),
         )
         .split(popup_layout[1])[1]
+}
+
+#[derive(Debug, Clone)]
+pub struct NotificationSender {
+    pub sender: mpsc::UnboundedSender<Event>,
+    pub ttl: u16,
+}
+
+impl NotificationSender {
+    fn send<T: ToString>(&self, message: T, level: NotificationLevel) -> AppResult<()> {
+        let notif = Notification {
+            message: message.to_string(),
+            level,
+            ttl: self.ttl,
+        };
+
+        self.sender.send(Event::Notification(notif))?;
+
+        Ok(())
+    }
+    pub fn info<T: ToString>(&self, message: T) -> AppResult<()> {
+        self.send(message, NotificationLevel::Info)?;
+        Ok(())
+    }
+    pub fn warning<T: ToString>(&self, message: T) -> AppResult<()> {
+        self.send(message, NotificationLevel::Warning)?;
+        Ok(())
+    }
+    pub fn error<T: ToString>(&self, message: T) -> AppResult<()> {
+        self.send(message, NotificationLevel::Error)?;
+        Ok(())
+    }
 }

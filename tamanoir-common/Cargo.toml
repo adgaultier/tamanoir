@@ -8,3 +8,9 @@ edition = "2021"
 [lib]
 path = "src/lib.rs"
 
+[dependencies]
+serde = { version = "1", features = ["derive"],optional= true }
+
+[features]
+std = ["serde"]           
+no_std=[]

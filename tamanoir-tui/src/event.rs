@@ -4,7 +4,7 @@ use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 
-use crate::{app::AppResult, notifications::Notification};
+use crate::{app::AppResult, notification::Notification};
 
 #[derive(Clone, Debug)]
 pub enum Event {
@@ -73,9 +73,6 @@ impl EventHandler {
         self.receiver
             .recv()
             .await
-            .ok_or(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "This is an IO error",
-            )))
+            .ok_or(Box::new(std::io::Error::other("This is an IO error")))
     }
 }

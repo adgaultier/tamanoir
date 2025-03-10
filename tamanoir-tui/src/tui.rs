@@ -1,12 +1,15 @@
-use crate::app::{App, AppResult};
-use crate::event::EventHandler;
-use crate::ui;
-use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
-use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
-use ratatui::backend::Backend;
-use ratatui::Terminal;
-use std::io;
-use std::panic;
+use std::{io, panic};
+
+use crossterm::{
+    event::EnableMouseCapture,
+    terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use ratatui::{backend::Backend, Terminal};
+
+use crate::{
+    app::{App, AppResult},
+    event::EventHandler,
+};
 
 #[derive(Debug)]
 pub struct Tui<B: Backend> {
@@ -35,13 +38,13 @@ impl<B: Backend> Tui<B> {
     }
 
     pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
-        self.terminal.draw(|frame| ui::render(app, frame))?;
+        self.terminal.draw(|frame| app.render(frame))?;
         Ok(())
     }
 
     fn reset() -> AppResult<()> {
         terminal::disable_raw_mode()?;
-        crossterm::execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+        crossterm::execute!(io::stdout(), LeaveAlternateScreen, EnableMouseCapture)?;
         Ok(())
     }
 

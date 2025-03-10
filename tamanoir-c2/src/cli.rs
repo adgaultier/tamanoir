@@ -1,8 +1,7 @@
 use std::net::Ipv4Addr;
 
 use clap::{Parser, Subcommand};
-
-use crate::{Engine, TargetArch};
+use tamanoir_common::{Engine, TargetArch};
 
 #[derive(Debug, Parser)]
 pub struct Opt {

