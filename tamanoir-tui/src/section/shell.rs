@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{hash_map::Entry, HashMap},
     sync::{Arc, RwLock},
 };
 
@@ -63,7 +63,7 @@ impl SessionShellSection {
             .read()
             .unwrap()
             .get(&session_id)
-            .unwrap()
+            .unwrap_or(&Vec::new())
             .iter()
             .filter(|cmd| cmd.entry_type == ShellHistoryEntryType::Command && !cmd.text.is_empty())
             .map(|cmd| cmd.text.clone())
@@ -91,7 +91,10 @@ impl SessionShellSection {
                     .iter()
                     .flat_map(|entry| match entry.entry_type {
                         ShellHistoryEntryType::Command => {
-                            vec![Line::from(Span::raw(format!("$ {}", entry.text)).bold())]
+                            vec![Line::from(vec![
+                                Span::raw(" ").bold().green(),
+                                Span::raw(entry.text.clone()).bold(),
+                            ])]
                         }
                         ShellHistoryEntryType::Response => entry
                             .text
@@ -105,7 +108,12 @@ impl SessionShellSection {
                 vec![]
             };
 
-            let prompt_text = Line::from(Span::from(format!("$ {}", self.prompt.value())).bold());
+            let width = block.width.max(3) - 3;
+            let line_scroll = self.prompt.visual_scroll(width as usize);
+            let prompt_text = Line::from(vec![
+                Span::raw(" ").bold().green(),
+                Span::from(self.prompt.value()).bold(),
+            ]);
             text.push(prompt_text);
 
             self.max_scroll = text.len() - 1;
@@ -132,6 +140,14 @@ impl SessionShellSection {
                 );
 
             frame.render_widget(history, block);
+
+            // render txt_input position cursor
+            if !self.manual_scroll {
+                let x = block.x
+                    + (self.prompt.visual_cursor().max(line_scroll) - line_scroll + 3) as u16;
+                let y = block.y + (self.max_scroll as u16 + 1).min(block.height - 2);
+                frame.set_cursor_position((x, y));
+            }
             if self.manual_scroll {
                 let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
                     .begin_symbol(Some("↑"))
@@ -202,17 +218,19 @@ impl SessionShellSection {
                         .await
                         .is_ok()
                     {
-                        if let Some(session_history) = self
-                            .shell_history_map
-                            .write()
-                            .unwrap()
-                            .get_mut(&session_id.clone())
-                        {
-                            session_history.push(ShellCommandEntry {
-                                text: command.to_string(),
-                                entry_type: ShellHistoryEntryType::Command,
-                                session_id,
-                            })
+                        let mut update_obj = self.shell_history_map.write().unwrap();
+                        let entry = ShellCommandEntry {
+                            text: command.to_string(),
+                            entry_type: ShellHistoryEntryType::Command,
+                            session_id: session_id.clone(),
+                        };
+                        match update_obj.entry(session_id) {
+                            Entry::Vacant(e) => {
+                                e.insert(vec![entry]);
+                            }
+                            Entry::Occupied(mut e) => {
+                                e.get_mut().push(entry);
+                            }
                         };
                     } else {
                         rce_service_client.delete_session_rce(session_id).await?;
@@ -231,14 +249,15 @@ impl SessionShellSection {
             }
             KeyCode::Up => {
                 self.history_index = self.history_index.saturating_sub(1);
+
                 if let Some(cmd) = self.get_stdin_history(session_id).get(self.history_index) {
                     self.prompt = self.prompt.clone().with_value(cmd.clone());
                 }
             }
             KeyCode::Down => {
-                let current_idx: usize = self.get_stdin_history(session_id.clone()).len();
-                self.history_index = current_idx.min(self.history_index + 1);
-                if self.history_index < current_idx {
+                let n_commands: usize = self.get_stdin_history(session_id.clone()).len(); //including current
+                self.history_index = n_commands.min(self.history_index + 1);
+                if self.history_index < n_commands {
                     if let Some(cmd) = self.get_stdin_history(session_id).get(self.history_index) {
                         self.prompt = self.prompt.clone().with_value(cmd.clone());
                     }
@@ -252,7 +271,9 @@ impl SessionShellSection {
             }
 
             _ => {
-                self.prompt.handle_event(&Event::Key(key_event));
+                if !self.manual_scroll {
+                    self.prompt.handle_event(&Event::Key(key_event));
+                }
             }
         }
         Ok(())

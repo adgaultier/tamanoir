@@ -186,15 +186,19 @@ impl Sections {
             self.focused_section == FocusedSection::KeyLogger,
         );
         if let Some(shell_block) = shell_block {
-            if let Some(session_id) = &self.session_section.selected_session {
-                self.session_section.shell.render(
-                    frame,
-                    shell_block,
-                    self.focused_section == FocusedSection::Shell,
-                    session_id.ip.clone(),
-                    self.shell_available(),
-                );
-            }
+            let selected_session_id =
+                if let Some(session_id) = &self.session_section.selected_session {
+                    session_id.ip.clone()
+                } else {
+                    "".into()
+                };
+            self.session_section.shell.render(
+                frame,
+                shell_block,
+                self.focused_section == FocusedSection::Shell,
+                selected_session_id,
+                self.shell_available(),
+            );
         }
         if self.focused_section == FocusedSection::Sessions && self.session_section.edition_mode {
             let popup_block = main_block;
@@ -219,8 +223,6 @@ impl Sections {
                 _ => {}
             },
 
-            MouseEventKind::Down(_) => {}
-            MouseEventKind::Up(_) => {}
             _ => {}
         }
         Ok(())
