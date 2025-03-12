@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Tamanoir</h1>
-  <h3>An eBPF🐝 keylogger with <br>C2-based RCE payload delivery</h3>
+  <h3>An eBPF🐝 Keylogger with <br>C2-based RCE payload delivery</h3>
   <img src="https://github.com/user-attachments/assets/47b8a0ef-6a52-4e2d-8188-e77bb9e98d79" style="width: 30%; height: auto;">
   <p><small><i>A large anteater of Central and South America, Myrmecophaga tridactyla</i></small></p>
 </div>
