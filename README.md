@@ -14,7 +14,7 @@ An eBPF program running on a target host, it will act as a keylogger and extract
 In DNS response, attacker can choose to send chunks of RCE payload that will be executed on targeted host.
 
 ### 2. Tamanoir-C2
-The C2(Command & Control) server. It acts as a DNS proxy and can inject rce payloads in DNS response.<br> 
+The Command & Control server. It acts as a DNS proxy and can inject rce payloads in DNS response.<br> 
 It also can handle reverse shell connections.
 
 ### 3. Tamanoir-tui
