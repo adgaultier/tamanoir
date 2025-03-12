@@ -38,7 +38,7 @@ Jump to:
 
 ## Architecture
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/06f104d0-3b07-43ec-834e-2043009c1f6c" style="width:75%">
+  <img src="https://github.com/user-attachments/assets/725c9623-ae8e-4d7e-9210-0785d5f28d6e" style="width:75%">
 </div>
 
 
