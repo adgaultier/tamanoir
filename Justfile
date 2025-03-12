@@ -22,8 +22,8 @@ build-tui:
 
 
 # Run Tamanoir
-tamanoir-run  hijack_ip="8.8.8.8" log_level="info":
-    RUST_LOG={{log_level}} sudo -E target/release/tamanoir --proxy-ip {{proxy_ip}} --hijack-ip {{hijack_ip}}
+tamanoir-run  hijack_ip="8.8.8.8" log_level="info" iface="wlan0":
+    RUST_LOG={{log_level}} sudo -E target/release/tamanoir --proxy-ip {{proxy_ip}} --hijack-ip {{hijack_ip}} --iface {{iface}}
 # Run tui
 tui-run  grpc_port="50051" log_level="debug":
     RUST_LOG={{log_level}} target/release/tamanoir-tui -i {{proxy_ip}} -p {{grpc_port}}

