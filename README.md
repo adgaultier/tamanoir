@@ -20,7 +20,7 @@ It also can handle reverse shell connections.
 ### 3. Tamanoir-tui
 The TUI client communicating with C2 server. Built on top of ratatui
 
-#### ⚡ Powered by [aya](https://aya-rs.dev),  [tonic](https://github.com/hyperium/tonic), [tokio](https://github.com/tokio-rs/tokio) and [ratatui](https://ratatui.rs)
+#### ⚡ Powered by [Aya](https://aya-rs.dev),  [Tonic](https://github.com/hyperium/tonic), [Tokio](https://github.com/tokio-rs/tokio) and [Ratatui](https://ratatui.rs)
 
 
 ### Glossary
