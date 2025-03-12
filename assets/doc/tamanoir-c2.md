@@ -1,5 +1,7 @@
 # Tamanoir-C2 server
 
+[Back to Readme](../../README.md)
+
 Tamanoir-C2 (Command and Control) server's  purpose is multiple: 
 - act as a dns proxy
 - extract typed keystrokes from target
@@ -11,7 +13,7 @@ Tamanoir-C2 (Command and Control) server's  purpose is multiple:
 
 
 ## Architecture
-It is composed of 3 running servers:
+It is composed of 3 servers:
 | type | default port | goal|
 |----------|----------|----------|
 | DNS  | 53 | handle dns requests from targets and rce payloads transmission |
@@ -20,7 +22,7 @@ It is composed of 3 running servers:
 
 
 
-## Available Rce payloads
+## 🔥 Available Rce payloads
 Tamanoir comes with ready-to-use payloads :
 
 
@@ -31,10 +33,10 @@ Tamanoir comes with ready-to-use payloads :
 | reverse-shell | open a tcp-shell communicating with tamanoir-c2 | needs to specify IP and PORT vars when building (see below) 
 
 
-- payloads location: ./assets/payloads
+### 📍 payloads location: ./assets/payloads
 
 
-## Builder
+## 🔧 Builder
  
  `tamanoir-c2 rce build`
 

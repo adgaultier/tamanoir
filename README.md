@@ -1,7 +1,7 @@
 <div align="center">
   <h1> Tamanoir 
   <h3> An eBPF🐝 keylogger with <br>C2-based RCE payload delivery  </h3><h1>
-  <img src="https://github.com/user-attachments/assets/47b8a0ef-6a52-4e2d-8188-e77bb9e98d79" style="width: 40%; height: 40%"</img>
+  <img src="https://github.com/user-attachments/assets/47b8a0ef-6a52-4e2d-8188-e77bb9e98d79" style="width: 30%; height: 30%">
   <p><small>
     <i>
       A large anteater of Central and South America, Myrmecophaga tridactyla
@@ -11,16 +11,41 @@
 
 ## 💡Overview
 
+Tamanoir is composed of 3 components: 
+
+### 1. Tamanoir
+An eBPF program running on a target host, it will act as a keylogger and extract keystrokes via DNS queries.<br> 
+In DNS response, attacker can choose to send chunks of RCE payload that will be executed on targeted host.
+
+### 2. Tamanoir-C2
+The C2(Command & Control) server. It acts as a DNS proxy and can inject rce payloads in DNS response.<br> 
+It also can handle reverse shell connections.
+
+### 3. Tamanoir-tui
+The TUI client communicating with C2 server. Built on top of ratatui
+
+#### ⚡ Powered by [aya](https://aya-rs.dev),  [tonic](https://github.com/hyperium/tonic), [tokio](https://github.com/tokio-rs/tokio) and [ratatui](https://ratatui.rs)
+
+
+### Glossary
+- what is [eBPF](https://ebpf.io/what-is-ebpf/)
+- C2: Command and Control
+- RCE: Remote Code Execution
+
+
+### Documentation
+Jump to:
+- [Focus on Tamanoir (eBPF)](assets/doc/tamanoir.md)
+- [Focus on Tamanoir-C2](assets/doc/tamanoir-c2.md)
+- [Focus on Tamanoir-Tui  ](assets/doc/tamanoir-tui.md)
+<br>
+
+## Architecture
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/24f80020-9d60-4f2a-825b-ed56574dfb24" </img>
+  <img src="https://github.com/user-attachments/assets/06f104d0-3b07-43ec-834e-2043009c1f6c" style="width:75%">
 </div>
 
-1. Capture keystrokes and store them in a queue in the kernel.
-2. Intercept DNS requests and inject the captured keystroes in the DNS payload, then redirect the request to the designated remote server acting as a DNS proxy.
-3. On the remote server, extract the keys from the DNS payload and send a valid DNS response.
-4. Intercept the response and modify its source address so the initial request will complete successfully.
 
-<br>
 
 ## 🚀 Setup
 
@@ -52,7 +77,7 @@ cargo build -p tamanoir --release
 cargo build -p tamanoir-c2 --release
 ```
 
-#### 4. Build Tui Client
+#### 4. Build Ratatui Client
 
 ```
 cargo build -p tamanoir-tui --release
@@ -62,7 +87,7 @@ These commands will produce  `tamanoir`, `tamanoir-c2` and `tamanoir-tui` execut
 
 ### 📥 Binary release
 
-You can download the pre-built binaries from the [release page](https://github.com/pythops/tamanoir/releases)
+You can download the pre-built binaries from the [release page](https://github.com/adgaultier/tamanoir/releases)
 
 <br>
 
@@ -113,11 +138,17 @@ tamanoir-tui -i  <C2 server IP>
 
 <br>
 
+
+
+
+
 ## ⚠️ Disclaimer
 
 `Tamanoir` is developed for educational purposes only
 
 <br>
+
+
 
 ## ✍️ Authors
 
