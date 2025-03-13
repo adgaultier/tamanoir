@@ -74,11 +74,12 @@ pub fn x_compile(
     let build_vars_formatted = format_build_vars_for_cross(build_vars)?;
     let bin_name = parse_package_name(crate_path.clone())?;
     let tmp_path = tmp_dir.path().to_string_lossy().to_string();
-    info!("installing dependencies");
+    info!("installing cross-rs");
     let cmd0 = format!(
-        "cargo install cross --git https://github.com/cross-rs/cross; cp  -ar {}/. {}",
+        "cargo install cross --git https://github.com/cross-rs/cross --rev 36c0d78; cp  -ar {}/. {}",
         crate_path, tmp_path
-    );
+    ); // we cannot use a released version yet (see https://github.com/cross-rs/cross/issues/1498#issuecomment-2133001860) so we're stuck on the main branch
+       // it is annoying to reinstall each time so I fix a sha @ 2025-03-13
     cmd.exec(cmd0)?;
     info!("start x compilation with cross to target {}", target);
     if let Some(cross_conf) = UTILS_FILES

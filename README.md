@@ -21,7 +21,10 @@ It also can handle reverse shell connections.
 The TUI client communicating with C2 server. Built on top of ratatui
 
 #### ⚡ Powered by [Aya](https://aya-rs.dev),  [Tonic](https://github.com/hyperium/tonic), [Tokio](https://github.com/tokio-rs/tokio) and [Ratatui](https://ratatui.rs)
-
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/eb671b0a-9431-41b7-9d41-4a35f222a728" style="width: 90%; height: auto;">
+  <p><small><i>Tui client demo</i></small></p>
+</div>
 
 ### Glossary
 - what is [eBPF](https://ebpf.io/what-is-ebpf/)
