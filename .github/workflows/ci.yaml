@@ -11,6 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@just
+
       - uses: cargo-bins/cargo-binstall@main
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -19,10 +20,19 @@ jobs:
 
       - run: cargo binstall -y bpf-linker
 
-      - name: Build
-        run: just build
+      - name: Build Tamanoir
+        run: just build-tamanoir
+
+      - name: Build Tamanoir-C2
+        run: |
+          sudo apt install -y protobuf-compiler
+          just build-c2
+
+      - name: Build TUI
+        run: just build-tui
 
       - name: Linting
         run: |
-          cargo clippy --workspace --all-features -- -D warnings
           cargo fmt --all -- --check
+          cargo clippy -p tamanoir-ebpf  -- -D warnings
+          cargo clippy --workspace --all-features --exclude tamanoir-ebpf  -- -D warnings

