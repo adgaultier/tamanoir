@@ -7,7 +7,7 @@
 
 ## 💡Overview
 
-Tamanoir is composed of 3 components: 
+Tamanoir is structured around 3 components: 
 
 ### 1. Tamanoir
 An eBPF program running on a target host, it will act as a keylogger and extract keystrokes via DNS queries.<br> 
@@ -20,11 +20,13 @@ It also can handle reverse shell connections.
 ### 3. Tamanoir-tui
 The TUI client communicating with C2 server. Built on top of ratatui
 
-#### ⚡ Powered by [Aya](https://aya-rs.dev),  [Tonic](https://github.com/hyperium/tonic), [Tokio](https://github.com/tokio-rs/tokio) and [Ratatui](https://ratatui.rs)
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/eb671b0a-9431-41b7-9d41-4a35f222a728" style="width: 90%; height: auto;">
+  <img src="https://github.com/user-attachments/assets/eb671b0a-9431-41b7-9d41-4a35f222a728" style="width: 100%; height: auto;">
   <p><small><i>Tui client demo</i></small></p>
 </div>
+
+#### ⚡ Powered by [Aya](https://aya-rs.dev), [Tokio](https://github.com/tokio-rs/tokio),  [Tonic](https://github.com/hyperium/tonic) and [Ratatui](https://ratatui.rs)
+
 
 ### Glossary
 - what is [eBPF](https://ebpf.io/what-is-ebpf/)
