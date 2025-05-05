@@ -142,7 +142,7 @@ pub fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
 }
 
 pub enum ForkResult {
-    Parent(u32), // Child's PID
+    Parent(u32),
     Child,
 }
 
@@ -151,20 +151,19 @@ pub fn fork() -> Result<ForkResult, i32> {
 
     unsafe {
         asm!(
-            "syscall",               // Use the syscall instruction
-            in("rax") SYS_FORK,        // Syscall number for fork
-            lateout("rax") result,   // Result returned in RAX
-            options(nostack, nomem), // No additional stack/memory clobbers
+            "syscall",
+            in("rax") SYS_FORK,
+            lateout("rax") result,
+            options(nostack, nomem),
         );
     }
 
-    // Interpret the result
     if result < 0 {
-        Err(result as i32) // Syscall returned an error
+        Err(result as i32)
     } else if result == 0 {
-        Ok(ForkResult::Child) // We're in the child process
+        Ok(ForkResult::Child)
     } else {
-        Ok(ForkResult::Parent(result as u32)) // We're in the parent
+        Ok(ForkResult::Parent(result as u32))
     }
 }
 

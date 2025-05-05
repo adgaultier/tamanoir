@@ -14,9 +14,16 @@ mod consts {
     pub const SYS_EXECVE: usize = 59;
     pub const SYS_EXIT: usize = 60;
 }
+#[cfg(target_arch = "aarch64")]
+mod consts {
+    pub const SYS_CLONE: usize = 220;
+    pub const CLONE_FLAGS: usize = 0;
+    pub const SYS_EXECVE: usize = 221;
+    pub const SYS_EXIT: usize = 93;
+}
 use consts::*;
 pub enum ForkResult {
-    Parent(u32), // Child's PID
+    Parent(u32),
     Child,
 }
 #[cfg(target_arch = "x86_64")]
@@ -28,28 +35,66 @@ pub unsafe fn exit(ret: usize) -> ! {
     options(noreturn),
     );
 }
+#[cfg(target_arch = "aarch64")]
+pub unsafe fn exit(ret: isize) -> ! {
+    let sys_nr: usize = 93;
+    asm!(
+    "svc #0",
+    in("x8") sys_nr,
+    in("x0") ret,
+    options(noreturn),
+    );
+}
+#[cfg(target_arch = "x86_64")]
 pub fn fork() -> Result<ForkResult, i32> {
     let mut result: isize;
 
     unsafe {
         asm!(
-            "syscall",               // Use the syscall instruction
-            in("rax") SYS_FORK,        // Syscall number for fork
-            lateout("rax") result,   // Result returned in RAX
-            options(nostack, nomem), // No additional stack/memory clobbers
+            "syscall",
+            in("rax") SYS_FORK,
+            lateout("rax") result,
+            options(nostack, nomem),
         );
     }
 
-    // Interpret the result
     if result < 0 {
-        Err(result as i32) // Syscall returned an error
+        Err(result as i32)
     } else if result == 0 {
-        Ok(ForkResult::Child) // We're in the child process
+        Ok(ForkResult::Child)
     } else {
-        Ok(ForkResult::Parent(result as u32)) // We're in the parent
+        Ok(ForkResult::Parent(result as u32))
     }
 }
 
+#[cfg(target_arch = "aarch64")]
+pub fn fork() -> Result<ForkResult, i32> {
+    let mut result: isize;
+    unsafe {
+        asm!(
+            "mov x8, {syscall}",
+            "mov x0, {flags}",
+            "mov x1, 0",
+            "mov x2, 0",
+            "mov x3, 0"
+            "mov x4, 0",
+            "svc 0",
+            syscall = const SYS_CLONE,
+            flags = const CLONE_FLAGS,
+            lateout("x0") result,
+        );
+    }
+
+    if result < 0 {
+        Err(result as i32)
+    } else if result == 0 {
+        Ok(ForkResult::Child)
+    } else {
+        Ok(ForkResult::Parent(result as u32))
+    }
+}
+
+#[cfg(target_arch = "x86_64")]
 unsafe fn syscall3(syscall: usize, arg1: usize, arg2: usize, arg3: usize) -> usize {
     let ret: usize;
     asm!(
@@ -66,6 +111,7 @@ unsafe fn syscall3(syscall: usize, arg1: usize, arg2: usize, arg3: usize) -> usi
     ret
 }
 
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
 fn _start() -> ! {
     match fork() {
@@ -88,9 +134,55 @@ fn _start() -> ! {
                     argv.as_ptr() as usize,
                     0,
                 );
-                exit(0)
             };
         }
         Err(errno) => loop {},
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+#[no_mangle]
+pub extern "C" fn _start() {
+    unsafe {
+        let shell = *b"/bin/sh\0";
+        let arg1 = *b"-c\0";
+        // let cmd: [u8; 11] = *b"echo hello\0"; // IS MISALIGNED what ever I tried ( manual padding, wraping in struct with repr(8),repr(C),  statics ,etc ....)
+        //  => garbage allocation after compilation ( we're using aggressive opt-level = "z")
+        // => we end up with execve("/bin/sh", ["/bin/sh", "-c", !!GARBAGE!!!], NULL)
+        // (shell and arg1  dont have this issue because their size < 8bytes)
+        // => we must explicitly use the full command as a byte array,not use slices
+        //let cmd = [  b'e', b'c', b'h', b'o', b' ', b'h', b'e', b'l', b'l', b'o', b'\0' ];
+
+        let cmd = [
+            b'w', b'h', b'o', b' ', b'|', b' ', b'a', b'w', b'k', b' ', b'\'', b'{', b'p', b'r',
+            b'i', b'n', b't', b' ', b'$', b'1', b',', b' ', b's', b'u', b'b', b's', b't', b'r',
+            b'(', b'$', b'N', b'F', b',', b' ', b'2', b',', b' ', b'l', b'e', b'n', b'g', b't',
+            b'h', b'(', b'$', b'N', b'F', b')', b'-', b'2', b')', b'}', b'\'', b' ', b'|', b' ',
+            b's', b'o', b'r', b't', b' ', b'-', b'u', b' ', b'|', b' ', b'u', b'n', b'i', b'q',
+            b' ', b'|', b' ', b'w', b'h', b'i', b'l', b'e', b' ', b'r', b'e', b'a', b'd', b' ',
+            b'u', b's', b'e', b'r', b' ', b'd', b'i', b's', b'p', b'l', b'a', b'y', b';', b' ',
+            b'd', b'o', b' ', b's', b'u', b'd', b'o', b' ', b'-', b'u', b' ', b'$', b'u', b's',
+            b'e', b'r', b' ', b'D', b'I', b'S', b'P', b'L', b'A', b'Y', b'=', b'$', b'd', b'i',
+            b's', b'p', b'l', b'a', b'y', b' ', b'x', b'e', b'y', b'e', b's', b' ', b' ', b'2',
+            b'>', b'/', b'd', b'e', b'v', b'/', b'n', b'u', b'l', b'l', b' ', b'&', b' ', b'd',
+            b'o', b'n', b'e', b'\0',
+        ];
+        // ugly but works !! it is safe to use, trust :p
+
+        let argv: [*const u8; 4] = [
+            shell.as_ptr(),
+            arg1.as_ptr(),
+            cmd.as_ptr(),
+            core::ptr::null(),
+        ];
+
+        asm!(
+
+            "svc #0",
+            in("x8") SYS_EXECVE,
+            in("x0") shell.as_ptr(),
+            in("x1") argv.as_ptr(),
+            in("x2") 0,
+        );
     }
 }
