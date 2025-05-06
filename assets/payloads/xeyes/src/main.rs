@@ -105,12 +105,12 @@ unsafe fn syscall3(syscall: usize, arg1: usize, arg2: usize, arg3: usize) -> usi
 
 #[cfg(target_arch = "x86_64")]
 #[no_mangle]
-fn _start() -> ! {
+fn _start() {
     match fork() {
-        Ok(ForkResult::Parent(child_pid)) => unsafe { exit(0) },
+        Ok(ForkResult::Parent(child_pid)) => exit(0),
         Ok(ForkResult::Child) => {
-            let shell: &[u8] = b"/bin/sh\0";
-            let flag: &[u8] = b"-c\0";
+            let shell = *b"/bin/sh\0";
+            let flag = *b"-c\0";
             let cmd: &[u8] =  b"who | awk '{print $1, substr($NF, 2, length($NF)-2)}' | sort -u | uniq | while read user display; do sudo -u $user DISPLAY=$display xeyes  2>/dev/null & done\0";
 
             let argv: [*const u8; 4] = [
@@ -134,10 +134,10 @@ fn _start() -> ! {
 
 #[cfg(target_arch = "aarch64")]
 #[no_mangle]
-pub extern "C" fn _start() {
+fn _start() {
     unsafe {
         let shell = *b"/bin/sh\0";
-        let arg1 = *b"-c\0";
+        let flag = *b"-c\0";
         // let cmd: [u8; 11] = *b"echo hello\0"; // IS MISALIGNED what ever I tried ( manual padding, wraping in struct with repr(8),repr(C),  statics ,etc ....)
         //  => garbage allocation after compilation ( we're using aggressive opt-level = "z")
         // => we end up with execve("/bin/sh", ["/bin/sh", "-c", !!GARBAGE!!!], NULL)
@@ -163,7 +163,7 @@ pub extern "C" fn _start() {
 
         let argv: [*const u8; 4] = [
             shell.as_ptr(),
-            arg1.as_ptr(),
+            flag.as_ptr(),
             cmd.as_ptr(),
             core::ptr::null(),
         ];
