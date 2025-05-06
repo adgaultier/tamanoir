@@ -22,12 +22,12 @@ mod consts {
     pub const SYS_EXIT: usize = 93;
 }
 use consts::*;
-pub enum ForkResult {
+enum ForkResult {
     Parent(u32),
     Child,
 }
 
-pub fn exit(ret: isize) -> ! {
+fn exit(ret: isize) -> ! {
     #[cfg(target_arch = "x86_64")]
     unsafe {
         asm!(
@@ -48,7 +48,7 @@ pub fn exit(ret: isize) -> ! {
     }
 }
 
-pub fn fork() -> Result<ForkResult, i32> {
+fn fork() -> Result<ForkResult, i32> {
     let mut result: isize;
 
     #[cfg(target_arch = "x86_64")]
