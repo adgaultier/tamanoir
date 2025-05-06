@@ -26,29 +26,32 @@ pub enum ForkResult {
     Parent(u32),
     Child,
 }
-#[cfg(target_arch = "x86_64")]
-pub unsafe fn exit(ret: usize) -> ! {
-    asm!(
-    "syscall",
-    in("rax") SYS_EXIT,
-    in("rdi") ret,
-    options(noreturn),
-    );
+
+pub fn exit(ret: isize) -> ! {
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        asm!(
+        "syscall",
+        in("rax") SYS_EXIT,
+        in("rdi") ret,
+        options(noreturn),
+        );
+    }
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        asm!(
+        "svc #0",
+        in("x8") SYS_EXIT,
+        in("x0") ret,
+        options(noreturn),
+        );
+    }
 }
-#[cfg(target_arch = "aarch64")]
-pub unsafe fn exit(ret: isize) -> ! {
-    let sys_nr: usize = 93;
-    asm!(
-    "svc #0",
-    in("x8") sys_nr,
-    in("x0") ret,
-    options(noreturn),
-    );
-}
-#[cfg(target_arch = "x86_64")]
+
 pub fn fork() -> Result<ForkResult, i32> {
     let mut result: isize;
 
+    #[cfg(target_arch = "x86_64")]
     unsafe {
         asm!(
             "syscall",
@@ -58,25 +61,14 @@ pub fn fork() -> Result<ForkResult, i32> {
         );
     }
 
-    if result < 0 {
-        Err(result as i32)
-    } else if result == 0 {
-        Ok(ForkResult::Child)
-    } else {
-        Ok(ForkResult::Parent(result as u32))
-    }
-}
-
-#[cfg(target_arch = "aarch64")]
-pub fn fork() -> Result<ForkResult, i32> {
-    let mut result: isize;
+    #[cfg(target_arch = "aarch64")]
     unsafe {
         asm!(
             "mov x8, {syscall}",
             "mov x0, {flags}",
             "mov x1, 0",
             "mov x2, 0",
-            "mov x3, 0"
+            "mov x3, 0",
             "mov x4, 0",
             "svc 0",
             syscall = const SYS_CLONE,

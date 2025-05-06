@@ -109,25 +109,6 @@ unsafe fn sys_dup3(arg1: usize, arg2: usize, arg3: isize) -> usize {
     ret
 }
 
-#[cfg(target_arch = "x86_64")]
-pub unsafe fn exit(ret: usize) -> ! {
-    asm!(
-    "syscall",
-    in("rax") SYS_EXIT,
-    in("rdi") ret,
-    options(noreturn),
-    );
-}
-#[cfg(target_arch = "aarch64")]
-pub unsafe fn exit(ret: usize) -> ! {
-    asm!(
-    "svc #0",
-    in("x8") SYS_EXIT,
-    in("x0") ret,
-    options(noreturn),
-    )
-}
-
 pub fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
     let ip_it = ipv4_str.split('.');
     let mut r = [0u8; 4];
@@ -146,15 +127,53 @@ pub enum ForkResult {
     Child,
 }
 
+pub fn exit(ret: isize) -> ! {
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        asm!(
+        "syscall",
+        in("rax") SYS_EXIT,
+        in("rdi") ret,
+        options(noreturn),
+        );
+    }
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        asm!(
+        "svc #0",
+        in("x8") SYS_EXIT,
+        in("x0") ret,
+        options(noreturn),
+        );
+    }
+}
+
 pub fn fork() -> Result<ForkResult, i32> {
     let mut result: isize;
 
+    #[cfg(target_arch = "x86_64")]
     unsafe {
         asm!(
             "syscall",
             in("rax") SYS_FORK,
             lateout("rax") result,
             options(nostack, nomem),
+        );
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        asm!(
+            "mov x8, {syscall}",
+            "mov x0, {flags}",
+            "mov x1, 0",
+            "mov x2, 0",
+            "mov x3, 0",
+            "mov x4, 0",
+            "svc 0",
+            syscall = const SYS_CLONE,
+            flags = const CLONE_FLAGS,
+            lateout("x0") result,
         );
     }
 
