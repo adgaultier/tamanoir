@@ -64,15 +64,13 @@ fn fork() -> Result<ForkResult, i32> {
     #[cfg(target_arch = "aarch64")]
     unsafe {
         asm!(
-            "mov x8, {syscall}",
-            "mov x0, {flags}",
-            "mov x1, 0",
-            "mov x2, 0",
-            "mov x3, 0",
-            "mov x4, 0",
-            "svc 0",
-            syscall = const SYS_CLONE,
-            flags = const CLONE_FLAGS,
+            "svc #0",
+            in("x8") SYS_CLONE,
+            in("x0") CLONE_FLAGS,
+            in("x1") 0,
+            in("x2") 0,
+            in("x3") 0,
+            in("x4") 0,
             lateout("x0") result,
         );
     }

