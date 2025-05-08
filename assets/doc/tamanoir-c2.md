@@ -68,5 +68,10 @@ will compile `reverse-shell` payload:
 - ⚠ path needs to be absolute
 
 ## ⚠ Limitations
-Cross compilation is only available  for `aarch64` ->  `x86_64` with gcc
+- Cross compilation is only available  for `aarch64` ->  `x86_64` 
+- Rce payloads are for now only available for GNU toolchain
+
+
+
+
 
