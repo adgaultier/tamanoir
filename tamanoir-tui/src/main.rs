@@ -37,7 +37,7 @@ async fn main() -> AppResult<()> {
         tui.exit()?;
     } else {
         tui.exit()?;
-        println!("Error Starting App, check if C2 server is reachable");
+        println!("Error starting client, check if C2 server is reachable");
     }
     Ok(())
 }

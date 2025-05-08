@@ -97,6 +97,26 @@ impl Session {
                 });
                 Ok(())
             }
+            TargetArch::Aarch64 => {
+                let mut build_dir = home_dir().unwrap();
+                build_dir.push(".tamanoir/bins");
+
+                let bin_name = format!("tamanoir-rce-{}_aarch64.bin", rce);
+
+                let data: Vec<u8> = fs::read(build_dir.join(bin_name)).map_err(|_| {
+                    format!(
+                        "rce {} not found in build directory, you may need to (re)build it",
+                        rce
+                    )
+                })?;
+                self.rce_payload = Some(SessionRcePayload {
+                    name: rce.into(),
+                    target_arch: TargetArch::Aarch64,
+                    length: data.len(),
+                    buffer: data,
+                });
+                Ok(())
+            }
             _ => Err(format!("target arch {:#?} unavailable", target_arch)),
         }
     }

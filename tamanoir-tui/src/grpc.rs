@@ -44,6 +44,8 @@ pub struct RceServiceClient {
 pub fn catch_grpc_err(e: Status, notification_sender: &NotificationSender) -> Status {
     if e.code() == Code::Unavailable {
         let _ = notification_sender.error("C2 server unreachable");
+    } else {
+        let _ = notification_sender.error(e.message());
     }
     e
 }
@@ -152,7 +154,7 @@ impl RceServiceClient {
             .client
             .set_session_rce(msg)
             .await
-            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender))?;
 
         Ok(())
     }
@@ -161,7 +163,7 @@ impl RceServiceClient {
             .client
             .delete_session_rce(SessionRequest { ip: session_id })
             .await
-            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender))?;
         Ok(())
     }
     pub async fn list_available_rce(&mut self) -> anyhow::Result<Vec<SessionRcePayload>> {

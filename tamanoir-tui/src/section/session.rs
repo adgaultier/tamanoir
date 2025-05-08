@@ -88,20 +88,24 @@ impl SessionSection {
                     if let Some(avail_payloads) = &self.edit_section.available_rce_payloads {
                         let selected = &avail_payloads[selected];
                         if selected.name != "-" {
-                            rce_client
+                            if let Ok(_) = rce_client
                                 .set_session_rce(
                                     self.selected_session.clone().unwrap().ip,
                                     selected.name.clone(),
                                     selected.target_arch.clone(),
                                 )
-                                .await?;
-                            self.notification_sender
-                                .info(format!("Rce set to {}", selected.name))?;
+                                .await
+                            {
+                                self.notification_sender
+                                    .info(format!("Rce set to {}", selected.name))?;
+                            }
                         } else {
-                            rce_client
+                            if let Ok(_) = rce_client
                                 .delete_session_rce(self.selected_session.clone().unwrap().ip)
-                                .await?;
-                            self.notification_sender.info("Rce deleted".to_string())?;
+                                .await
+                            {
+                                self.notification_sender.info("Rce deleted".to_string())?;
+                            }
                         }
                     }
                 }
