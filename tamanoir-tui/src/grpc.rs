@@ -56,7 +56,7 @@ impl SessionServiceClient {
         port: u16,
         event_sender: mpsc::UnboundedSender<Event>,
     ) -> AppResult<Self> {
-        let client = SessionClient::connect(format!("http://{}:{}", ip, port)).await?;
+        let client = SessionClient::connect(format!("http://{ip}:{port}")).await?;
         init_keymaps();
         Ok(Self {
             client,
@@ -98,7 +98,7 @@ impl RemoteShellServiceClient {
         port: u16,
         event_sender: mpsc::UnboundedSender<Event>,
     ) -> AppResult<Self> {
-        let client = RemoteShellClient::connect(format!("http://{}:{}", ip, port)).await?;
+        let client = RemoteShellClient::connect(format!("http://{ip}:{port}")).await?;
         Ok(Self {
             client,
             notification_sender: NotificationSender {
@@ -129,7 +129,7 @@ impl RceServiceClient {
         port: u16,
         event_sender: mpsc::UnboundedSender<Event>,
     ) -> AppResult<Self> {
-        let client = RceClient::connect(format!("http://{}:{}", ip, port)).await?;
+        let client = RceClient::connect(format!("http://{ip}:{port}")).await?;
         Ok(Self {
             client,
             notification_sender: NotificationSender {

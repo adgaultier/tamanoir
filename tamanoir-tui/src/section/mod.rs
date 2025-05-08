@@ -362,7 +362,7 @@ impl Display for ShellAvailablilityStatus {
             Self::Transmiting => "Waiting for tx to complete...",
             Self::NotSelectedForTransmission => "Unavailable",
         };
-        write!(f, "{}", msg)
+        write!(f, "{msg}")
     }
 }
 

@@ -20,7 +20,7 @@ pub fn test_bin(bin_path: String) -> Result<(), String> {
         shell: "/bin/bash".into(),
         stdout: true,
     };
-    let build_vars = format!("SHELLCODE_PATH={}", bin_path);
+    let build_vars = format!("SHELLCODE_PATH={bin_path}");
     let cmd0 = format!(
         "cd {} && {}  cargo run --release",
         tmp_dir.path().to_string_lossy(),

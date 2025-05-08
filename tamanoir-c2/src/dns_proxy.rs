@@ -58,7 +58,7 @@ pub async fn mangle(
 pub async fn forward_req(data: &Vec<u8>, dns_ip: Ipv4Addr) -> Result<Vec<u8>, u8> {
     debug!("Forwarding {} bytes", data.len());
     let sock = UdpSocket::bind("0.0.0.0:0").await.map_err(|_| 0u8)?;
-    let remote_addr = format!("{}:53", dns_ip);
+    let remote_addr = format!("{dns_ip}:53");
     sock.send_to(data.as_slice(), remote_addr)
         .await
         .map_err(|_| 0u8)?;
@@ -146,8 +146,7 @@ impl DnsProxy {
         sock: &UdpSocket,
     ) -> anyhow::Result<()> {
         let s = Session::new(addr, TargetArch::Unknown).ok_or(Error::msg(format!(
-            "couldn't parse addr for session {}",
-            addr
+            "couldn't parse addr for session {addr}"
         )))?;
         if let [127, 0, 0, 1] = s.ip.octets() {
             // just forward hypotetical localhost queries

@@ -76,8 +76,7 @@ pub fn x_compile(
     let tmp_path = tmp_dir.path().to_string_lossy().to_string();
     info!("installing cross-rs");
     let cmd0 = format!(
-        "cargo install cross --git https://github.com/cross-rs/cross --rev 36c0d78; cp  -ar {}/. {}",
-        crate_path, tmp_path
+        "cargo install cross --git https://github.com/cross-rs/cross --rev 36c0d78; cp  -ar {crate_path}/. {tmp_path}"
     ); // we cannot use a released version yet (see https://github.com/cross-rs/cross/issues/1498#issuecomment-2133001860) so we're stuck on the main branch
        // it is annoying to reinstall each time so I fix a sha @ 2025-03-13
     cmd.exec(cmd0)?;
@@ -85,10 +84,10 @@ pub fn x_compile(
     if let Some(cross_conf) = UTILS_FILES
         .get()
         .unwrap()
-        .get(&format!("Cross_{}.toml", target))
+        .get(&format!("Cross_{target}.toml"))
         .cloned()
     {
-        let out_path = format!("{}/Cross.toml", tmp_path);
+        let out_path = format!("{tmp_path}/Cross.toml");
         File::create(&out_path)
             .map_err(|_| format!("Couldn't create {}", &out_path))?
             .write_all(cross_conf.as_bytes())
@@ -105,7 +104,7 @@ pub fn x_compile(
 
     info!("run post install scripts with cross");
     let post_build_script = UTILS_FILES.get().unwrap().get("build.rs").cloned().unwrap();
-    let out_path = format!("{}/build.rs", tmp_path);
+    let out_path = format!("{tmp_path}/build.rs");
     File::create(&out_path)
         .map_err(|_| format!("Couldn't create {}", &out_path))?
         .write_all(post_build_script.as_bytes())
@@ -113,8 +112,7 @@ pub fn x_compile(
     cmd.exec(cmd1)?;
 
     let cmd3 = format!(
-        "cp  {}/target/{}-unknown-linux-gnu/release/{}_{}.bin {}/{}_{}.bin",
-        tmp_path, target, bin_name, target, out_dir, bin_name, target
+        "cp  {tmp_path}/target/{target}-unknown-linux-gnu/release/{bin_name}_{target}.bin {out_dir}/{bin_name}_{target}.bin"
     );
     cmd.exec(cmd3)?;
 
@@ -136,15 +134,13 @@ pub fn compile(
     info!("start compilation of {}", bin_name);
     let tmp_path = tmp_dir.path().to_string_lossy();
     let cmd0 = format!(
-        "cp -ar {}/. {} && cd {} && {}  cargo build --release",
-        crate_path, tmp_path, tmp_path, build_vars
+        "cp -ar {crate_path}/. {tmp_path} && cd {tmp_path} && {build_vars}  cargo build --release"
     );
     cmd.exec(cmd0)?;
 
     info!("start post-build operations");
     let cmd1 = format!(
-        "strip -s --strip-unneeded {}/target/release/{}",
-        tmp_path, bin_name
+        "strip -s --strip-unneeded {tmp_path}/target/release/{bin_name}"
     );
     let cmd2 = format!(
         "objcopy -O binary {}/target/release/{}  {}/{}_{}.bin",

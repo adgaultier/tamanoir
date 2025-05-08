@@ -137,7 +137,7 @@ pub fn format_keys(keycodes: Vec<String>) -> String {
                 repeat_counter += 1;
             } else {
                 if repeat_counter > 1 {
-                    fmt_keys.push(format!("(x{}) ", repeat_counter));
+                    fmt_keys.push(format!("(x{repeat_counter}) "));
                 }
                 fmt_keys.push(current_key.clone());
                 last_key = Some(current_key);
@@ -149,7 +149,7 @@ pub fn format_keys(keycodes: Vec<String>) -> String {
         }
     }
     if repeat_counter > 1 {
-        fmt_keys.push(format!("(x{}) ", repeat_counter))
+        fmt_keys.push(format!("(x{repeat_counter}) "))
     }
     fmt_keys.join("")
 }

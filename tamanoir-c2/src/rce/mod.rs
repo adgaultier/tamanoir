@@ -17,7 +17,7 @@ impl Cmd {
 
         let output = prog
             .output()
-            .map_err(|_| format!("Failed to run {}", cmd))?;
+            .map_err(|_| format!("Failed to run {cmd}"))?;
         if self.stdout {
             io::stdout().write_all(&output.stdout).unwrap();
             io::stderr().write_all(&output.stderr).unwrap();
