@@ -39,10 +39,6 @@ pub async fn mangle(
     data[2] = 1;
     data[3] = 32;
     let session_obj: Session = Session::new(addr, arch).unwrap();
-    // if let std::collections::hash_map::Entry::Vacant(e) = current_sessions.entry(session.ip) {
-    //     info!("Adding new session for client: {} ", session.ip);
-    //     e.insert(session.clone());
-    // }
 
     let current_session = current_sessions.get_mut(&session_obj.ip).unwrap();
     if current_session.arch == TargetArch::Unknown {

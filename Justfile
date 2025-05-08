@@ -1,4 +1,3 @@
-set export
 _default:
     @just --list
 
@@ -9,16 +8,16 @@ arch:="x86_64" # x86_64 , aarch64
 proxy_ip:="192.168.1.15"
 
 # Build Tamanoir
-build-tamanoir:
+tamanoir-build:
     just _build-ebpf
     cargo build -p tamanoir --release
 
 # Build C&C server
-build-c2:
+c2-build:
     cargo build -p tamanoir-c2 --release
 
 # Build Tui
-build-tui:
+tui-build:  
     cargo build -p tamanoir-tui --release
 
 

@@ -223,7 +223,6 @@ impl StreamReceiver<HashMap<String, SessionResponse>> for SessionServiceClient {
             .into_inner();
         while let Some(msg) = stream.next().await {
             let msg = msg?;
-
             // compare session old state to new state to catch events we want to send notification for
             if let Some(session) = update_object.read().unwrap().get(&msg.ip.clone()) {
                 if session.shell_availability != msg.shell_availability {
