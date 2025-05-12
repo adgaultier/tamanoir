@@ -84,9 +84,7 @@ impl Session {
                 let bin_name = format!("tamanoir-rce-{rce}_x86_64.bin");
 
                 let data: Vec<u8> = fs::read(build_dir.join(bin_name)).map_err(|_| {
-                    format!(
-                        "rce {rce} not found in build directory, you may need to (re)build it"
-                    )
+                    format!("rce {rce} not found in build directory, you may need to (re)build it")
                 })?;
                 self.rce_payload = Some(SessionRcePayload {
                     name: rce.into(),
@@ -103,9 +101,7 @@ impl Session {
                 let bin_name = format!("tamanoir-rce-{rce}_aarch64.bin");
 
                 let data: Vec<u8> = fs::read(build_dir.join(bin_name)).map_err(|_| {
-                    format!(
-                        "rce {rce} not found in build directory, you may need to (re)build it"
-                    )
+                    format!("rce {rce} not found in build directory, you may need to (re)build it")
                 })?;
                 self.rce_payload = Some(SessionRcePayload {
                     name: rce.into(),

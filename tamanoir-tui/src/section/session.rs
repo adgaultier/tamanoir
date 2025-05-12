@@ -367,9 +367,9 @@ impl SessionSection {
 
         let rows: Vec<Row> = {
             let reader = self.sessions_map.read().unwrap();
-            reader.keys().map(|k| {
-                    Row::new([Cell::from(k.clone())]).style(Style::new().fg(Color::White))
-                })
+            reader
+                .keys()
+                .map(|k| Row::new([Cell::from(k.clone())]).style(Style::new().fg(Color::White)))
                 .collect()
         };
 
@@ -492,9 +492,7 @@ impl SessionEditSection {
     pub fn scroll_up(&mut self) {
         let state = self.state();
         let i = match state.selected() {
-            Some(i) => {
-                i.saturating_sub(1)
-            }
+            Some(i) => i.saturating_sub(1),
             None => 0,
         };
 

@@ -139,9 +139,7 @@ pub fn compile(
     cmd.exec(cmd0)?;
 
     info!("start post-build operations");
-    let cmd1 = format!(
-        "strip -s --strip-unneeded {tmp_path}/target/release/{bin_name}"
-    );
+    let cmd1 = format!("strip -s --strip-unneeded {tmp_path}/target/release/{bin_name}");
     let cmd2 = format!(
         "objcopy -O binary {}/target/release/{}  {}/{}_{}.bin",
         tmp_path,
