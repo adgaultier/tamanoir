@@ -82,25 +82,29 @@ impl SessionSection {
                         .update_session_layout(self.selected_session.clone().unwrap().ip, selected)
                         .await?;
                     self.notification_sender
-                        .info(format!("Layout set to {}", selected))?;
+                        .info(format!("Layout set to {selected}"))?;
                 }
                 EditSubsection::RcePayload => {
                     if let Some(avail_payloads) = &self.edit_section.available_rce_payloads {
                         let selected = &avail_payloads[selected];
                         if selected.name != "-" {
-                            rce_client
+                            if rce_client
                                 .set_session_rce(
                                     self.selected_session.clone().unwrap().ip,
                                     selected.name.clone(),
                                     selected.target_arch.clone(),
                                 )
-                                .await?;
-                            self.notification_sender
-                                .info(format!("Rce set to {}", selected.name))?;
-                        } else {
-                            rce_client
-                                .delete_session_rce(self.selected_session.clone().unwrap().ip)
-                                .await?;
+                                .await
+                                .is_ok()
+                            {
+                                self.notification_sender
+                                    .info(format!("Rce set to {}", selected.name))?;
+                            }
+                        } else if rce_client
+                            .delete_session_rce(self.selected_session.clone().unwrap().ip)
+                            .await
+                            .is_ok()
+                        {
                             self.notification_sender.info("Rce deleted".to_string())?;
                         }
                     }
@@ -191,7 +195,7 @@ impl SessionSection {
                     .available_layouts
                     .clone()
                     .into_iter()
-                    .map(|l| Row::new([Span::from(format!("{}", l))]))
+                    .map(|l| Row::new([Span::from(format!("{l}"))]))
                     .collect();
                 Table::new(rows, [Fill(1)]).header(header)
             }
@@ -364,10 +368,8 @@ impl SessionSection {
         let rows: Vec<Row> = {
             let reader = self.sessions_map.read().unwrap();
             reader
-                .iter()
-                .map(|(k, _)| {
-                    Row::new([Cell::from(k.clone())]).style(Style::new().fg(Color::White))
-                })
+                .keys()
+                .map(|k| Row::new([Cell::from(k.clone())]).style(Style::new().fg(Color::White)))
                 .collect()
         };
 
@@ -490,13 +492,7 @@ impl SessionEditSection {
     pub fn scroll_up(&mut self) {
         let state = self.state();
         let i = match state.selected() {
-            Some(i) => {
-                if i > 1 {
-                    i - 1
-                } else {
-                    0
-                }
-            }
+            Some(i) => i.saturating_sub(1),
             None => 0,
         };
 

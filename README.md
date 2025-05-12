@@ -5,6 +5,8 @@
   <p><small><i>A large anteater of Central and South America, Myrmecophaga tridactyla</i></small></p>
 </div>
 
+#### ⚡ Powered by [Aya](https://aya-rs.dev), [Tokio](https://github.com/tokio-rs/tokio),  [Tonic](https://github.com/hyperium/tonic) and [Ratatui](https://ratatui.rs)
+
 ## 💡Overview
 
 Tamanoir is structured around 3 components: 
@@ -25,7 +27,6 @@ The TUI client communicating with C2 server. Built on top of ratatui
   <p><small><i>Tui client demo</i></small></p>
 </div>
 
-#### ⚡ Powered by [Aya](https://aya-rs.dev), [Tokio](https://github.com/tokio-rs/tokio),  [Tonic](https://github.com/hyperium/tonic) and [Ratatui](https://ratatui.rs)
 
 
 ### Glossary

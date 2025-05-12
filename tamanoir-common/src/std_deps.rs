@@ -65,7 +65,7 @@ impl FromStr for Engine {
         match s {
             "docker" => Ok(Engine::Docker),
             "podman" => Ok(Engine::Podman),
-            _ => Err(format!("{} engine isn't implmented", s)),
+            _ => Err(format!("{s} engine isn't implmented")),
         }
     }
 }
@@ -77,7 +77,7 @@ impl FromStr for TargetArch {
         match s {
             "x86_64" => Ok(TargetArch::X86_64),
             "aarch64" => Ok(TargetArch::Aarch64),
-            _ => Err(format!("{} arch isn't implmented", s)),
+            _ => Err(format!("{s} arch isn't implmented")),
         }
     }
 }
@@ -89,7 +89,7 @@ impl TryFrom<u8> for TargetArch {
         match value {
             0 => Ok(Self::X86_64),
             1 => Ok(Self::Aarch64),
-            _ => Err(format!("{} arch enum not recognized ", value)),
+            _ => Err(format!("{value} arch enum not recognized ")),
         }
     }
 }

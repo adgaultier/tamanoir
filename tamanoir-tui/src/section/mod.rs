@@ -62,13 +62,6 @@ impl Sections {
     }
 
     fn render_footer_help(&self, frame: &mut Frame, block: Rect) {
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Min(1), Constraint::Fill(1), Constraint::Min(1)])
-            .split(block.inner(Margin {
-                horizontal: 2,
-                vertical: 0,
-            }));
         let base_message = if self.session_section.is_editing() {
             Vec::new()
         } else {
@@ -120,13 +113,27 @@ impl Sections {
             }
             _ => Vec::new(),
         };
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                if !self.session_section.is_editing() {
+                    Constraint::Min(35)
+                } else {
+                    Constraint::Max(0)
+                },
+                Constraint::Fill(1),
+            ])
+            .split(block.inner(Margin {
+                horizontal: 2,
+                vertical: 0,
+            }));
         frame.render_widget(
             Text::from(vec![Line::from(base_message)]).left_aligned(),
             chunks[0],
         );
         frame.render_widget(
             Text::from(vec![Line::from(contextual_msg)]).right_aligned(),
-            chunks[2],
+            chunks[1],
         );
     }
 
@@ -362,7 +369,7 @@ impl Display for ShellAvailablilityStatus {
             Self::Transmiting => "Waiting for tx to complete...",
             Self::NotSelectedForTransmission => "Unavailable",
         };
-        write!(f, "{}", msg)
+        write!(f, "{msg}")
     }
 }
 

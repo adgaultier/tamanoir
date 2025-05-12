@@ -44,6 +44,8 @@ pub struct RceServiceClient {
 pub fn catch_grpc_err(e: Status, notification_sender: &NotificationSender) -> Status {
     if e.code() == Code::Unavailable {
         let _ = notification_sender.error("C2 server unreachable");
+    } else {
+        let _ = notification_sender.error(e.message());
     }
     e
 }
@@ -54,7 +56,7 @@ impl SessionServiceClient {
         port: u16,
         event_sender: mpsc::UnboundedSender<Event>,
     ) -> AppResult<Self> {
-        let client = SessionClient::connect(format!("http://{}:{}", ip, port)).await?;
+        let client = SessionClient::connect(format!("http://{ip}:{port}")).await?;
         init_keymaps();
         Ok(Self {
             client,
@@ -96,7 +98,7 @@ impl RemoteShellServiceClient {
         port: u16,
         event_sender: mpsc::UnboundedSender<Event>,
     ) -> AppResult<Self> {
-        let client = RemoteShellClient::connect(format!("http://{}:{}", ip, port)).await?;
+        let client = RemoteShellClient::connect(format!("http://{ip}:{port}")).await?;
         Ok(Self {
             client,
             notification_sender: NotificationSender {
@@ -127,7 +129,7 @@ impl RceServiceClient {
         port: u16,
         event_sender: mpsc::UnboundedSender<Event>,
     ) -> AppResult<Self> {
-        let client = RceClient::connect(format!("http://{}:{}", ip, port)).await?;
+        let client = RceClient::connect(format!("http://{ip}:{port}")).await?;
         Ok(Self {
             client,
             notification_sender: NotificationSender {
@@ -152,7 +154,7 @@ impl RceServiceClient {
             .client
             .set_session_rce(msg)
             .await
-            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender))?;
 
         Ok(())
     }
@@ -161,7 +163,7 @@ impl RceServiceClient {
             .client
             .delete_session_rce(SessionRequest { ip: session_id })
             .await
-            .map_err(|e| catch_grpc_err(e, &self.notification_sender));
+            .map_err(|e| catch_grpc_err(e, &self.notification_sender))?;
         Ok(())
     }
     pub async fn list_available_rce(&mut self) -> anyhow::Result<Vec<SessionRcePayload>> {
@@ -221,7 +223,6 @@ impl StreamReceiver<HashMap<String, SessionResponse>> for SessionServiceClient {
             .into_inner();
         while let Some(msg) = stream.next().await {
             let msg = msg?;
-
             // compare session old state to new state to catch events we want to send notification for
             if let Some(session) = update_object.read().unwrap().get(&msg.ip.clone()) {
                 if session.shell_availability != msg.shell_availability {

@@ -76,7 +76,7 @@ impl TcpShell {
             .read()
             .unwrap()
             .get(&ip)
-            .ok_or(format!("{} not found", ip))?
+            .ok_or(format!("{ip} not found"))?
             .clone())
     }
 

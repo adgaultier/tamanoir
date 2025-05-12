@@ -8,16 +8,17 @@ SECTIONS
         *(.text.prologue)
         *(.text)
         *(.text.*)
-    }
+        *(.text.msg)
 
+    }
     . = ALIGN(16);
     .data :
     {
         *(.rodata)
         *(.rodata.*)
-        *(.data)
-
+        *(.data)    
     }
+    
     /DISCARD/ :
 	{
 		*(.interp)

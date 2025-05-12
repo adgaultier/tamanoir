@@ -7,7 +7,7 @@
 ## Egress (eBPF Tc program)
 1. when a udp packet with destination ip `HIJACK-IP` is to be sent via selected network interface, ebpf program captures it 
 2. a payload is built, with target architecture stored as first byte 
-3. a fixed-length chunk of stored keystrokes is fetched from ringbuffer and added to payload
+3. a fixed-length chunk of stored keystrokes is fetched from ebpf queue and added to payload
 4. it is injected between layer3 (IP) and layer4 (UDP) 
 5. destination IP is replaced by Tamanoir-C2 server IP
 6. packet is then sent

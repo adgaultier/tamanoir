@@ -24,9 +24,9 @@ pub async fn serve_tonic(
     sessions_store: SessionsStore,
     remote_shell: TcpShell,
 ) -> anyhow::Result<()> {
-    let addr = format!("0.0.0.0:{}", grpc_port).parse().unwrap();
+    let addr = format!("0.0.0.0:{grpc_port}").parse().unwrap();
     info!("Starting grpc server");
-    debug!("Grpc server is listening on {}", addr);
+    debug!("Grpc server is listening on {addr}");
     Server::builder()
         .add_service(SessionServer::new(sessions_store.clone()))
         .add_service(RceServer::new(sessions_store))
@@ -126,13 +126,13 @@ impl Session for SessionsStore {
             Some(existing_session) => {
                 existing_session.set_layout(layout);
                 self.notify_update(existing_session.clone())
-                    .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
+                    .map_err(|e| Status::new(Code::Internal, format!("{e}")))?;
 
                 Ok(Response::new(Empty {}))
             }
             None => Err(Status::new(
                 Code::NotFound,
-                format!("{}: session not found", ip),
+                format!("{ip}: session not found"),
             )),
         }
     }
@@ -174,13 +174,13 @@ impl Rce for SessionsStore {
             Some(existing_session) => {
                 existing_session.reset_rce_payload();
                 self.notify_update(existing_session.clone())
-                    .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
+                    .map_err(|e| Status::new(Code::Internal, format!("{e}")))?;
 
                 Ok(Response::new(Empty {}))
             }
             None => Err(Status::new(
                 Code::NotFound,
-                format!("{}: session not found", ip),
+                format!("{ip}: session not found"),
             )),
         }
     }
@@ -231,18 +231,18 @@ impl Rce for SessionsStore {
                 match existing_session.set_rce_payload(&req.rce, target_arch) {
                     Ok(_) => {
                         self.notify_update(existing_session.clone())
-                            .map_err(|e| Status::new(Code::Internal, format!("{}", e)))?;
+                            .map_err(|e| Status::new(Code::Internal, format!("{e}")))?;
                         Ok(Response::new(Empty {}))
                     }
                     Err(e) => Err(Status::new(
                         Code::InvalidArgument,
-                        format!("{}: invalid rce ({})", req.rce, e),
+                        format!("{}: invalid rce ({e})", req.rce),
                     )),
                 }
             }
             None => Err(Status::new(
                 Code::NotFound,
-                format!("{}: session not found", ip),
+                format!("{ip}: session not found"),
             )),
         }
     }

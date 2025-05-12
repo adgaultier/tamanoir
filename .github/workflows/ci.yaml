@@ -21,15 +21,15 @@ jobs:
       - run: cargo binstall -y bpf-linker
 
       - name: Build Tamanoir
-        run: just build-tamanoir
+        run: just tamanoir-build
 
       - name: Build Tamanoir-C2
         run: |
           sudo apt install -y protobuf-compiler
-          just build-c2
+          just c2-build
 
       - name: Build TUI
-        run: just build-tui
+        run: just tui-build
 
       - name: Linting
         run: |
