@@ -15,10 +15,10 @@ jobs:
       - uses: cargo-bins/cargo-binstall@main
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          toolchain: nightly-2024-12-31 #we do not trust llvm20 yet
           components: clippy rustfmt
 
-      - run: cargo binstall -y bpf-linker
+      - run: cargo install bpf-linker
 
       - name: Build Tamanoir
         run: just tamanoir-build

@@ -32,11 +32,16 @@ Tamanoir comes with ready-to-use payloads :
 | xeyes | open `xeyes` program on target gui | demonstrate how to execute simple shellcode. Only works if target uses x11 |
 | reverse-shell | open a tcp-shell communicating with tamanoir-c2 | needs to specify IP var when building (see below) 
 
-
-### 📍 payloads location: ./assets/payloads
+#### 📍If using release binaries, make sure to include your `tamanoir-rce-*.bin` in `~/.tamanoir/bins` directory on tamanoir-c2 host
+⇨ You'll then be able to select them in tui for transmission to target.<br> 
+⇨ You'll have to choose either aarch64 or x86_64 architecture depending on target architecture.
 
 
 ## 🔧 Builder
+You also can build provided  payloads from source, and even build your own <br>
+Building is mandatory for reverse-shell rce payload, which needs to know your tamanoir-c2 ip @build time
+
+### 📍 payloads location: ./assets/payloads
  
  `tamanoir-c2 rce build`
 

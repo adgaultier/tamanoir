@@ -5,7 +5,7 @@ on:
     tags:
       - "*"
 jobs:
-  build:
+  build_x86:
     permissions:
       contents: write
     continue-on-error: false
@@ -13,49 +13,132 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - uses: taiki-e/install-action@just
-
-      - uses: cargo-bins/cargo-binstall@main
-
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          toolchain: "nightly-2024-12-31" #we do not trust llvm20 yet
           components: clippy rustfmt
 
       - name: Install the dependencies
         run: |
           sudo apt update
-          sudo apt install -y podman binutils-aarch64-linux-gnu musl-tools
-          cargo binstall -y cross
-          cargo binstall -y bpf-linker
+          sudo apt install -y protobuf-compiler
+          cargo install  bpf-linker
+          
+      - name: Build tamanoir-ebpf
+        run: cd tamanoir-ebpf && cargo build  --release
+
+      - name: Build tamanoir for x86_64
+        run: |
+          cargo build -p tamanoir  --target x86_64-unknown-linux-gnu --release
+          cp target/x86_64-unknown-linux-gnu/release/tamanoir tamanoir-x86_64
+
+      - name: Build tamanoir-c2 for x86_64
+        run: |
+          cargo build -p tamanoir-c2 --target x86_64-unknown-linux-gnu --release
+          cp target/x86_64-unknown-linux-gnu/release/tamanoir-c2 tamanoir-c2-x86_64
+
+      - name: Build tamanoir-tui for x86_64
+        run: |
+          cargo build -p tamanoir-tui --target x86_64-unknown-linux-gnu --release
+          cp target/x86_64-unknown-linux-gnu/release/tamanoir-tui tamanoir-tui-x86_64
+
+      - name: Build hello-world shellcodes for x86_64
+        run: |
+          ./tamanoir-c2-x86_64 rce  build  -c ./assets/payloads/hello -t x86_64
+          ./tamanoir-c2-x86_64 rce  build  -c ./assets/payloads/xeyes -t x86_64
+          cp $HOME/.tamanoir/bins/tamanoir-rce-hello_x86_64.bin tamanoir-rce-hello_x86_64.bin
+          cp $HOME/.tamanoir/bins/tamanoir-rce-xeyes_x86_64.bin tamanoir-rce-xeyes_x86_64.bin
+
+      - name: Persist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: x86-artifacts
+          path: |
+            tamanoir-x86_64
+            tamanoir-c2-x86_64
+            tamanoir-tui-x86_64
+            tamanoir-rce-hello_x86_64.bin
+            tamanoir-rce-xeyes_x86_64.bin
+     
+  build_arm:
+    permissions:
+      contents: write
+    continue-on-error: false
+    runs-on: ubuntu-24.04-arm
+    env:
+      LD_LIBRARY_PATH: /usr/lib/llvm-19/lib
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "nightly-2024-12-31" #we do not trust llvm20 yet
+          components: clippy rustfmt
+
+      - name: Install the dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y protobuf-compiler llvm-19-dev libclang-19-dev clang-19
+          
+          cargo install  bpf-linker
+
 
       - name: Build tamanoir-ebpf
-        run: just build-ebpf
+        run: cd tamanoir-ebpf && cargo build  --release
 
-      - name: Build tamanoir-proxy for arm64 musl
+      - name: Build tamanoir for arm64
         run: |
-          CROSS_CONTAINER_ENGINE=podman cross build -p tamanoir-proxy --target aarch64-unknown-linux-musl --release
-          cp target/aarch64-unknown-linux-musl/release/tamanoir tamanoir-aarch64-unknown-linux-musl
+          cargo build -p tamanoir --target aarch64-unknown-linux-gnu --release
+          cp target/aarch64-unknown-linux-gnu/release/tamanoir tamanoir-aarch64
 
-      - name: Build tamanoir-proxy for x86_64 musl
+      - name: Build tamanoir-C2 for arm64
         run: |
-          CROSS_CONTAINER_ENGINE=podman cross build -p tamanoir-proxy --target x86_64-unknown-linux-musl --release
-          cp target/x86_64-unknown-linux-musl/release/tamanoir tamanoir-x86_64-unknown-linux-musl
+          cargo build -p tamanoir-c2 --target aarch64-unknown-linux-gnu --release
+          cp target/aarch64-unknown-linux-gnu/release/tamanoir-c2 tamanoir-c2-aarch64
 
-      - name: Build tamanoir for arm64 musl
+      - name: Build tamanoir-tui for arm64
         run: |
-          CROSS_CONTAINER_ENGINE=podman cross build --target aarch64-unknown-linux-musl --release
-          cp target/aarch64-unknown-linux-musl/release/tamanoir tamanoir-aarch64-unknown-linux-musl
+          cargo build -p tamanoir-tui --target aarch64-unknown-linux-gnu --release
+          cp target/aarch64-unknown-linux-gnu/release/tamanoir-tui tamanoir-tui-aarch64
 
-      - name: Build tamanoir for x86_64 musl
+      - name: Build hello-world shellcodes for arm64
         run: |
-          CROSS_CONTAINER_ENGINE=podman cross build --target x86_64-unknown-linux-musl --release
-          cp target/x86_64-unknown-linux-musl/release/tamanoir tamanoir-x86_64-unknown-linux-musl
+          ./tamanoir-c2-aarch64 rce  build  -c ./assets/payloads/hello -t aarch64
+          ./tamanoir-c2-aarch64 rce  build  -c ./assets/payloads/xeyes -t aarch64
+          cp $HOME/.tamanoir/bins/tamanoir-rce-hello_aarch64.bin tamanoir-rce-hello_aarch64.bin
+          cp $HOME/.tamanoir/bins/tamanoir-rce-xeyes_aarch64.bin tamanoir-rce-xeyes_aarch64.bin
 
-      - name: Upload Binary
+      - name: Persist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: arch-artifacts
+          path: |
+            tamanoir-aarch64
+            tamanoir-c2-aarch64
+            tamanoir-tui-aarch64
+            tamanoir-rce-hello_aarch64.bin
+            tamanoir-rce-xeyes_aarch64.bin
+
+  release:
+    permissions:
+        contents: write
+    continue-on-error: false
+    needs: [build_x86,build_arm]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+      - name: Upload Binaries
         uses: softprops/action-gh-release@v2
         with:
-          files: "tamanoir*"
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/**/tamanoir-*
           body: |
             [Release.md](${{ github.server_url }}/${{ github.repository }}/blob/main/Release.md)
+
+
